@@ -13,6 +13,15 @@ import { Home } from "lucide-react";
 import SuppliersList from "./componenets/Supplier/EditSupplier";
 import SupplierViewOnly from "./componenets/Supplier/ViewSuppliers";
 import ViewProducts from "./componenets/Products/viewProducts";
+import AddCategory from "./componenets/Products/addProductCategory";
+import OrdersInCart from "./componenets/Orders/ordersIncart";
+import MainTransactionControl from "./componenets/Transactions/MainTransactionControl";
+import TransactionControlView from "./componenets/Transactions/transactioncontrol";
+import VerificationView from "./componenets/Transactions/transaction-verification";
+import BankAccountView from "./componenets/Transactions/BankAccountview";
+import OrderManagementDelivery from "./componenets/Order-management/delivery-orders";
+import OrderManagementPickup from "./componenets/Order-management/pickup-orders";
+import OrderDetails from "./componenets/Order-management/orderdetails";
 
 function App() {
   return (
@@ -44,6 +53,31 @@ function App() {
           }
         />
         <Route
+          path="/add-category"
+          element={
+            <>
+              <AddCategory />
+            </>
+          }
+        />
+        <Route
+          path="/delivery-orders"
+          element={
+            <>
+              <OrderManagementDelivery />
+            </>
+          }
+        />
+        <Route
+          path="/pickup-orders"
+          element={
+            <>
+              <OrderManagementPickup />
+            </>
+          }
+        />
+
+        <Route
           path="/all-employees"
           element={
             <>
@@ -56,6 +90,30 @@ function App() {
           element={
             <>
               <SupplierProfile />
+            </>
+          }
+        />
+        <Route
+          path="/Transactions-control"
+          element={
+            <>
+              <MainTransactionControl />
+            </>
+          }
+        />
+        <Route
+          path="/order-details"
+          element={
+            <>
+              <OrderDetails />
+            </>
+          }
+        />
+        <Route
+          path="/ordersINcart"
+          element={
+            <>
+              <OrdersInCart />
             </>
           }
         />

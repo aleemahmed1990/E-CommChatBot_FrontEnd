@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import axios from "axios";
 import { PlusIcon, XCircleIcon, SearchIcon, Save } from "lucide-react";
+
 import Sidebar from "../Sidebar/sidebar";
 import { toast } from "react-hot-toast";
 
-const API_URL = "https://ultra-inquisitive-oatmeal.glitch.me";
+const API_URL = "http://localhost:5000";
 
 const AddProduct = () => {
   // Product type state
@@ -18,6 +19,15 @@ const AddProduct = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearchingParents, setIsSearchingParents] = useState(false);
   const [isSearchingSuppliers, setIsSearchingSuppliers] = useState(false);
+
+  // near top of AddProduct()
+  const [categoriesList, setCategoriesList] = useState([]);
+  useEffect(() => {
+    axios
+      .get(`${API_URL}/api/categories`)
+      .then((res) => setCategoriesList(res.data.data))
+      .catch(console.error);
+  }, []);
 
   // Form data state with complete fields from all screens
   const [formData, setFormData] = useState({
@@ -39,6 +49,16 @@ const AddProduct = () => {
     minimumOrder: 1,
     highestValue: "",
     normalShelvesCount: "",
+    stockAmount: "",
+    safetyDays: "",
+    safetyDaysStock: "",
+    // reorder flags:
+    useStockAmount: false,
+    useSafetyDays: false,
+    noReorder: false,
+    // yellow fields now readOnly No info:
+    deliveryDays: "",
+    deliveryTime: "",
     highShelvesCount: "",
     deliveryTime: "",
     reOrderSetting: "2 days average",
@@ -107,6 +127,14 @@ const AddProduct = () => {
   const masterImageRef = useRef(null);
   const moreImageRefs = useRef([]);
 
+  // New helper to toggle reorder mode:
+  const handleReorderMode = (mode) => {
+    setFormData((fd) => ({
+      ...fd,
+      useStockAmount: mode === "stock",
+      useSafetyDays: mode === "safety",
+    }));
+  };
   // Fetch parent products and suppliers on component mount
   useEffect(() => {
     const fetchParentProducts = async () => {
@@ -135,6 +163,24 @@ const AddProduct = () => {
     fetchParentProducts();
     fetchSuppliers();
   }, []);
+
+  // right after your fetchParentProducts / fetchSuppliers useEffect:
+  useEffect(() => {
+    if (productType === "Child" && formData.parentProduct) {
+      const parent = parentProducts.find(
+        (p) => p.productId === formData.parentProduct
+      );
+      if (parent) {
+        setFormData((fd) => ({
+          ...fd,
+          supplierName: parent.supplierName,
+          supplierContact: parent.supplierContact,
+          supplierAddress: parent.supplierAddress,
+          supplierEmail: parent.supplierEmail,
+        }));
+      }
+    }
+  }, [productType, formData.parentProduct, parentProducts]);
 
   // Filter suppliers based on search term
   useEffect(() => {
@@ -893,6 +939,127 @@ const AddProduct = () => {
               )}
             </div>
 
+            {/* Only Supplier Information for Parent */}
+            <div className="border border-red-300 p-3 rounded-lg mb-4">
+              <div className="flex justify-between">
+                <div className="text-xs font-medium">Allocate Supplier</div>
+                <div className="flex">
+                  <div className="text-xs px-2 border-r border-gray-300">
+                    Supplier information
+                  </div>
+                  <div className="text-xs px-2 border-r border-gray-300">
+                    Supplier Name
+                  </div>
+                  <div className="text-xs px-2">Supplier contact</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Supplier details */}
+            <div className="mb-4">
+              <div className="flex gap-2 text-xs mb-1">
+                <span>or use time supplier</span>
+                <span className="ml-auto">search supplier</span>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-medium mb-1">
+                  Supplier name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="alternateSupplier"
+                    value={formData.alternateSupplier}
+                    onChange={handleChange}
+                    onFocus={() => {
+                      if (formData.alternateSupplier) {
+                        setShowSuggestions(true);
+                      }
+                    }}
+                    placeholder="Search or enter supplier name"
+                    className="w-full border border-gray-300 p-1 rounded text-sm"
+                    required
+                  />
+                  {isSearchingSuppliers && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin h-4 w-4 border-2 border-purple-500 rounded-full border-t-transparent"></div>
+                    </div>
+                  )}
+
+                  {showSuggestions && filteredSuppliers.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-40 overflow-y-auto">
+                      {filteredSuppliers.map((supplier) => (
+                        <div
+                          key={supplier._id || supplier.id}
+                          className="p-2 hover:bg-purple-50 cursor-pointer border-b border-gray-200"
+                          onClick={() => selectSupplier(supplier)}
+                        >
+                          <div className="font-medium text-sm">
+                            {supplier.name}
+                          </div>
+                          {supplier.email && (
+                            <div className="text-xs text-gray-500">
+                              {supplier.email}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-1">
+                    Supplier contact
+                  </label>
+                  <input
+                    type="text"
+                    name="supplierContact"
+                    value={formData.supplierContact}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 p-1 rounded text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-1">
+                    Supplier address
+                  </label>
+                  <input
+                    type="text"
+                    name="supplierAddress"
+                    value={formData.supplierAddress}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 p-1 rounded text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-1">
+                    Supplier Email
+                  </label>
+                  <input
+                    type="email"
+                    name="supplierEmail"
+                    value={formData.supplierEmail}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 p-1 rounded text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Add Supplier Button */}
+            <div className="flex justify-end mb-4">
+              <button
+                type="button"
+                className="bg-orange-500 text-white rounded-full w-8 h-8 flex items-center justify-center"
+              >
+                <PlusIcon size={20} />
+              </button>
+            </div>
+
             {/* Main content sections - only show for chosen product type */}
             {productType && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -900,134 +1067,7 @@ const AddProduct = () => {
                 <div className="lg:col-span-2">
                   <div className="bg-white p-4 rounded shadow">
                     {productType === "Parent" ? (
-                      <>
-                        {/* Only Supplier Information for Parent */}
-                        <div className="border border-red-300 p-3 rounded-lg mb-4">
-                          <div className="flex justify-between">
-                            <div className="text-xs font-medium">
-                              Allocate Supplier
-                            </div>
-                            <div className="flex">
-                              <div className="text-xs px-2 border-r border-gray-300">
-                                Supplier information
-                              </div>
-                              <div className="text-xs px-2 border-r border-gray-300">
-                                Supplier Name
-                              </div>
-                              <div className="text-xs px-2">
-                                Supplier contact
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Supplier details */}
-                        <div className="mb-4">
-                          <div className="flex gap-2 text-xs mb-1">
-                            <span>or use time supplier</span>
-                            <span className="ml-auto">search supplier</span>
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="block text-xs font-medium mb-1">
-                              Supplier name{" "}
-                              <span className="text-red-500">*</span>
-                            </label>
-                            <div className="relative">
-                              <input
-                                type="text"
-                                name="alternateSupplier"
-                                value={formData.alternateSupplier}
-                                onChange={handleChange}
-                                onFocus={() => {
-                                  if (formData.alternateSupplier) {
-                                    setShowSuggestions(true);
-                                  }
-                                }}
-                                placeholder="Search or enter supplier name"
-                                className="w-full border border-gray-300 p-1 rounded text-sm"
-                                required
-                              />
-                              {isSearchingSuppliers && (
-                                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                                  <div className="animate-spin h-4 w-4 border-2 border-purple-500 rounded-full border-t-transparent"></div>
-                                </div>
-                              )}
-
-                              {showSuggestions &&
-                                filteredSuppliers.length > 0 && (
-                                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-40 overflow-y-auto">
-                                    {filteredSuppliers.map((supplier) => (
-                                      <div
-                                        key={supplier._id || supplier.id}
-                                        className="p-2 hover:bg-purple-50 cursor-pointer border-b border-gray-200"
-                                        onClick={() => selectSupplier(supplier)}
-                                      >
-                                        <div className="font-medium text-sm">
-                                          {supplier.name}
-                                        </div>
-                                        {supplier.email && (
-                                          <div className="text-xs text-gray-500">
-                                            {supplier.email}
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium mb-1">
-                                Supplier contact
-                              </label>
-                              <input
-                                type="text"
-                                name="supplierContact"
-                                value={formData.supplierContact}
-                                onChange={handleChange}
-                                className="w-full border border-gray-300 p-1 rounded text-sm"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium mb-1">
-                                Supplier address
-                              </label>
-                              <input
-                                type="text"
-                                name="supplierAddress"
-                                value={formData.supplierAddress}
-                                onChange={handleChange}
-                                className="w-full border border-gray-300 p-1 rounded text-sm"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium mb-1">
-                                Supplier Email
-                              </label>
-                              <input
-                                type="email"
-                                name="supplierEmail"
-                                value={formData.supplierEmail}
-                                onChange={handleChange}
-                                className="w-full border border-gray-300 p-1 rounded text-sm"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Add Supplier Button */}
-                        <div className="flex justify-end mb-4">
-                          <button
-                            type="button"
-                            className="bg-orange-500 text-white rounded-full w-8 h-8 flex items-center justify-center"
-                          >
-                            <PlusIcon size={20} />
-                          </button>
-                        </div>
-                      </>
+                      <></>
                     ) : (
                       <>
                         {/* Global Trade Item Number - for non-Parent product types */}
@@ -1094,6 +1134,7 @@ const AddProduct = () => {
                                 key={`spec-${index}`}
                                 className="grid grid-cols-5 p-2 border-t border-gray-300 text-xs"
                               >
+                                {/* Height */}
                                 <input
                                   type="text"
                                   value={spec.height}
@@ -1106,6 +1147,8 @@ const AddProduct = () => {
                                   }
                                   className="border border-gray-300 p-1 rounded"
                                 />
+
+                                {/* Length */}
                                 <input
                                   type="text"
                                   value={spec.length}
@@ -1119,18 +1162,21 @@ const AddProduct = () => {
                                   className="border border-gray-300 p-1 rounded"
                                 />
 
+                                {/* Depth (was incorrectly bound to length before) */}
                                 <input
                                   type="text"
-                                  value={spec.length}
+                                  value={spec.depth}
                                   onChange={(e) =>
                                     handleSpecChange(
                                       index,
-                                      "colour",
+                                      "depth",
                                       e.target.value
                                     )
                                   }
-                                  className="border border-gray-300 p-1 rounded "
+                                  className="border border-gray-300 p-1 rounded"
                                 />
+
+                                {/* Width */}
                                 <input
                                   type="text"
                                   value={spec.width}
@@ -1144,6 +1190,7 @@ const AddProduct = () => {
                                   className="border border-gray-300 p-1 rounded"
                                 />
 
+                                {/* “or” placeholder */}
                                 <div className="flex items-center">
                                   <input
                                     type="text"
@@ -1151,8 +1198,10 @@ const AddProduct = () => {
                                     className="w-full border border-gray-300 p-1 rounded"
                                   />
                                 </div>
+
+                                {/* Colour */}
                                 <div className="flex items-center">
-                                  <p className=" font-medium mr-3">Colour</p>
+                                  <p className="font-medium mr-3">Colour</p>
                                   <input
                                     type="text"
                                     value={spec.colours}
@@ -1192,64 +1241,99 @@ const AddProduct = () => {
 
                         {/* Inventory section - simplified layout */}
                         <div className="mb-4">
-                          <p className="text-base font-bold mb-3">
-                            When send alert massage to make reorder
-                          </p>
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-base font-bold">
+                              When send alert massage to make reorder
+                            </p>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFormData({ ...formData, noReorder: true })
+                                }
+                                className="bg-black text-white px-2 py-1 rounded"
+                              >
+                                no reorder
+                              </button>
+                              <input
+                                type="checkbox"
+                                name="noReorder"
+                                checked={formData.noReorder}
+                                onChange={() =>
+                                  setFormData({
+                                    ...formData,
+                                    noReorder: !formData.noReorder,
+                                  })
+                                }
+                              />
+                            </div>
+                          </div>
 
                           {/* Amount section */}
-                          <div className="mb-4">
-                            <p className="text-xs mb-2">
-                              Amount in number products
-                            </p>
+                          <div className="mb-4 flex items-center">
+                            <input
+                              type="checkbox"
+                              name="useStockAmount"
+                              checked={formData.useStockAmount}
+                              onChange={() => handleReorderMode("stock")}
+                              className="mr-2"
+                            />
                             <input
                               type="text"
                               name="stockAmount"
                               onChange={handleChange}
                               className="w-14 bg-white border border-black border-solid p-1 rounded text-sm mb-2"
                             />
-                            <p className="text-xs mb-2">
-                              if arrive to amount above reorder
-                            </p>
                           </div>
+                          <p className="text-xs mb-2 ml-6">
+                            if arrive to amount above reorder
+                          </p>
 
                           {/* OR divider */}
-                          <div className=" mb-4 text-red-600 text-start ml-7">
+                          <div className="mb-4 text-red-600 text-start ml-7">
                             <span className="font-bold">or</span>
                           </div>
 
                           {/* Safety days section */}
                           <div className="mb-4">
-                            <p className="text-xs mb-2">safety days to stock</p>
-                            <input
-                              type="text"
-                              name="safetyDays"
-                              onChange={handleChange}
-                              className="w-14 bg-white border border-black border-solid p-1 rounded text-xs mb-2"
-                            />
-                            <p className="text-xs mb-2"></p>
+                            <div className="flex items-center mb-2">
+                              <input
+                                type="checkbox"
+                                name="useSafetyDays"
+                                checked={formData.useSafetyDays}
+                                onChange={() => handleReorderMode("safety")}
+                                className="mr-2"
+                              />
+                              <input
+                                type="text"
+                                name="safetyDays"
+                                onChange={handleChange}
+                                className="w-14 bg-white border border-black border-solid p-1 rounded text-xs"
+                              />
+                            </div>
                             <input
                               type="text"
                               name="safetyDaysStock"
-                              value={formData.safetyDaysStock}
+                              value="No info"
                               readOnly
-                              className="w-14 bg-yellow-100 border p-1 rounded text-xs inline-block mr-2"
+                              className="w-14 bg-yellow-100 border p-1 rounded text-xs mb-2 ml-6"
                             />
-                            <p className="text-xs">
+                            <p className="text-xs ml-6">
                               Number of amount of stock that safety days
                               represent
                             </p>
                           </div>
 
-                          {/* Delivery time section - Previously missing red shade box */}
+                          {/* Delivery time section */}
                           <div className="mb-20 mt-20">
-                            <p className="text-xs mb-2  px-1">delivery days</p>
-                            <p className="text-xs mb-2  px-1 mb-12">
+                            <p className="text-xs mb-2 px-1">delivery days</p>
+                            <p className="text-xs mb-2 px-1 mb-12">
                               +
                               <input
                                 type="text"
                                 name="deliveryDays"
-                                defaultValue="5"
-                                onChange={handleChange}
+                                value="No info"
+                                readOnly
                                 className="w-14 bg-yellow-100 border border-yellow-100 p-1 rounded text-xs mb-2"
                               />
                             </p>
@@ -1262,8 +1346,8 @@ const AddProduct = () => {
                               <input
                                 type="text"
                                 name="deliveryTime"
-                                defaultValue="7"
-                                onChange={handleChange}
+                                value="No info"
+                                readOnly
                                 className="w-14 bg-yellow-100 border border-yellow-100 p-1 rounded text-xs mb-2"
                               />
                             </p>
@@ -1271,15 +1355,32 @@ const AddProduct = () => {
                             <input
                               type="text"
                               name="deliveryTime"
-                              onChange={handleChange}
+                              value="No info"
+                              readOnly
                               className="w-14 bg-yellow-100 ml-3 border border-yellow-100 p-1 rounded text-xs mb-2"
                             />
-                            <p className="text-xs mb-2 px-1  ">
-                              Time to make order in amount of number of
-                              product in stock
+                            <p className="text-xs mb-2 px-1">
+                              Time to make order in amount of number of product
+                              in stock
                             </p>
                           </div>
                         </div>
+
+                        {/* immediately after your Inventory section JSX */}
+                        {formData.useStockAmount &&
+                          +formData.stock <= +formData.stockAmount && (
+                            <p className="text-red-600 font-bold">
+                              ⚠️ Reorder required: stock has fallen to{" "}
+                              {formData.stock}
+                            </p>
+                          )}
+                        {formData.useSafetyDays &&
+                          +formData.safetyDaysStock <= +formData.stock && (
+                            <p className="text-red-600 font-bold">
+                              ⚠️ Reorder required by safety days threshold
+                            </p>
+                          )}
+
                         {/* System Calculation */}
                         <div className="mb-4">
                           <p className="text-xs mb-1">
@@ -1288,17 +1389,21 @@ const AddProduct = () => {
                           <p className="text-xs mb-1">
                             Average items per day sales
                           </p>
-                          <div className="bg-yellow-100 h-6 w-36 mb-3"></div>
+                          <div className="bg-yellow-100 h-6 w-36 mb-3 flex items-center justify-center text-xs">
+                            No info
+                          </div>
 
                           <div className="flex justify-between items-center mb-3">
                             <div>
                               <p className="text-xs mb-1">
                                 highest sales per day
                               </p>
-                              <div className="bg-yellow-100 h-6 w-32"></div>
+                              <div className="bg-yellow-100 h-6 w-32 flex items-center justify-center text-xs">
+                                No info
+                              </div>
                             </div>
                             <div className="bg-red-500 text-white px-4 py-1 rounded text-xs">
-                              No reorder
+                              sales data
                             </div>
                           </div>
 
@@ -1309,158 +1414,33 @@ const AddProduct = () => {
                                 amount of high sales
                               </p>
                               <div className="flex flex-col gap-1">
-                                <div className="bg-yellow-100 h-6 w-36"></div>
-                                <div className="bg-yellow-100 h-6 w-36"></div>
-                                <div className="bg-yellow-100 h-6 w-36"></div>
+                                <div className="bg-yellow-100 h-6 w-36 flex items-center justify-center text-xs">
+                                  No info
+                                </div>
+                                <div className="bg-yellow-100 h-6 w-36 flex items-center justify-center text-xs">
+                                  No info
+                                </div>
+                                <div className="bg-yellow-100 h-6 w-36 flex items-center justify-center text-xs">
+                                  No info
+                                </div>
                               </div>
                             </div>
                             <div>
                               <p className="text-xs mb-1">dates</p>
                               <div className="flex flex-col gap-1">
-                                <div className="bg-yellow-100 h-6 w-36"></div>
-                                <div className="bg-yellow-100 h-6 w-36"></div>
-                                <div className="bg-yellow-100 h-6 w-36"></div>
+                                <div className="bg-yellow-100 h-6 w-36 flex items-center justify-center text-xs">
+                                  No info
+                                </div>
+                                <div className="bg-yellow-100 h-6 w-36 flex items-center justify-center text-xs">
+                                  No info
+                                </div>
+                                <div className="bg-yellow-100 h-6 w-36 flex items-center justify-center text-xs">
+                                  No info
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-
-                        {/* Supplier Information */}
-                        <div className="border border-red-300 p-3 rounded-lg mb-4">
-                          <div className="flex justify-between">
-                            <div className="text-xs font-medium">
-                              Allocate Supplier
-                            </div>
-                            <div className="flex">
-                              <div className="text-xs px-2 border-r border-gray-300">
-                                Supplier information
-                              </div>
-                              <div className="text-xs px-2 border-r border-gray-300">
-                                Supplier Name
-                              </div>
-                              <div className="text-xs px-2">
-                                Supplier contact
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Supplier details */}
-                        <div className="mb-4">
-                          <div className="flex gap-2 text-xs mb-1">
-                            <span>or use time supplier</span>
-                            <span className="ml-auto">search supplier</span>
-                          </div>
-
-                          <div className="space-y-2">
-                            <div>
-                              <label className="block text-xs font-medium mb-1">
-                                Supplier name
-                              </label>
-                              <input
-                                type="text"
-                                name="supplierName"
-                                value={formData.supplierName}
-                                onChange={handleChange}
-                                className="w-full border border-gray-300 p-1 rounded text-sm"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium mb-1">
-                                Supplier contact
-                              </label>
-                              <input
-                                type="text"
-                                name="supplierContact"
-                                value={formData.supplierContact}
-                                onChange={handleChange}
-                                className="w-full border border-gray-300 p-1 rounded text-sm"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium mb-1">
-                                Supplier address
-                              </label>
-                              <input
-                                type="text"
-                                name="supplierAddress"
-                                value={formData.supplierAddress}
-                                onChange={handleChange}
-                                className="w-full border border-gray-300 p-1 rounded text-sm"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium mb-1">
-                                Supplier Email
-                              </label>
-                              <input
-                                type="email"
-                                name="supplierEmail"
-                                value={formData.supplierEmail}
-                                onChange={handleChange}
-                                className="w-full border border-gray-300 p-1 rounded text-sm"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Add Supplier Button */}
-                        <div className="flex justify-end mb-4">
-                          <button
-                            type="button"
-                            className="bg-orange-500 text-white rounded-full w-8 h-8 flex items-center justify-center"
-                          >
-                            <PlusIcon size={20} />
-                          </button>
-                        </div>
-
-                        {/* Suppliers Table (for Child product view) */}
-                        {productType === "Child" && (
-                          <div className="mb-4">
-                            <h3 className="text-sm font-medium mb-2">
-                              Suppliers
-                            </h3>
-                            <table className="w-full border-collapse">
-                              <thead>
-                                <tr className="text-xs">
-                                  <th className="border border-gray-300 p-1 text-left">
-                                    Option ID
-                                  </th>
-                                  <th className="border border-gray-300 p-1 text-left">
-                                    Supplier name
-                                  </th>
-                                  <th className="border border-gray-300 p-1 text-left">
-                                    Last supplying date
-                                  </th>
-                                  <th className="border border-gray-300 p-1 text-left">
-                                    Active
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {suppliers.map((supplier) => (
-                                  <tr key={supplier.id} className="text-xs">
-                                    <td className="border border-gray-300 p-1">
-                                      {supplier.id}
-                                    </td>
-                                    <td className="border border-gray-300 p-1">
-                                      {supplier.name}
-                                    </td>
-                                    <td className="border border-gray-300 p-1">
-                                      {supplier.date}
-                                    </td>
-                                    <td className="border border-gray-300 p-1">
-                                      {supplier.active}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
 
                         {/* Any Discount */}
                         <div className="mb-4">
@@ -1579,33 +1559,40 @@ const AddProduct = () => {
 
                   {/* Categories */}
                   <div className="mb-4">
-                    <h3 className="text-sm font-medium mb-2">Categories</h3>
+                    <h3 className="text-sm font-medium mb-2">Category</h3>
                     <select
                       name="categories"
                       value={formData.categories}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 p-2 rounded"
+                      className="w-full border p-2 rounded"
                     >
-                      <option value="Stores">Screws</option>
-                      <option value="category1">Category 1</option>
-                      <option value="category2">Category 2</option>
-                      <option value="category3">Category 3</option>
+                      <option value="">-- Select category --</option>
+                      {categoriesList.map((cat) => (
+                        <option key={cat._id} value={cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
-                  {/* Sub Categories */}
+                  {/* Subcategories */}
                   <div className="mb-4">
-                    <h3 className="text-sm font-medium mb-2">Sub Categories</h3>
+                    <h3 className="text-sm font-medium mb-2">Subcategory</h3>
                     <select
                       name="subCategories"
-                      value={formData.subCategories || ""}
+                      value={formData.subCategories}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 p-2 rounded"
+                      className="w-full border p-2 rounded"
+                      disabled={!formData.categories}
                     >
-                      <option value="Stores">Screws</option>
-                      <option value="category1">sub Category 1</option>
-                      <option value="category2">sub Category 2</option>
-                      <option value="category3">sub Category 3</option>
+                      <option value="">-- Select subcategory --</option>
+                      {categoriesList
+                        .find((cat) => cat.name === formData.categories)
+                        ?.subcategories.map((sub) => (
+                          <option key={sub} value={sub}>
+                            {sub}
+                          </option>
+                        ))}
                     </select>
                   </div>
 

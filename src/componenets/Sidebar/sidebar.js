@@ -244,6 +244,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <ShoppingCart size={18} />,
           name: "Orders to cart not ordered yet ( everyone )",
           access: "",
+          path: "/ordersINcart",
         },
         {
           id: 2,
@@ -252,6 +253,7 @@ const Sidebar = ({ onSectionClick }) => {
           name: "Transaction control... paid / or not ( articial emp finance )",
           access: "Approval to paid and disapprove",
           note: "confirmed orders and paid",
+          path: "/Transactions-control",
         },
         {
           id: 3,
@@ -267,6 +269,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Package size={18} />,
           name: "Order management delivery ( driver and emp on filing delivery )",
           access: "Customer will pickup Order management",
+          path: "/delivery-orders",
         },
         {
           id: 5,
@@ -307,6 +310,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Archive size={18} />,
           name: "Product list everyone ( View can only check )",
           access: "",
+          path: "/productlist",
         },
         {
           id: 33,
@@ -321,6 +325,14 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <AlertTriangle size={18} />,
           name: "Out of Stock...order stock",
           access: "",
+        },
+        {
+          id: 36,
+          number: "36.",
+
+          name: "Sales data for products",
+          access: "",
+          path: "/sales-data",
         },
       ],
     },
@@ -355,6 +367,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Tag size={18} />,
           name: "Categories",
           access: "",
+          path: "/add-category",
         },
       ],
     },

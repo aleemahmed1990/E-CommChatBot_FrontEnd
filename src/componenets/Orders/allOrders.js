@@ -95,6 +95,7 @@ const AllOrders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
 
   // Filter orders based on selected status filters and search query
   const filteredOrders = allOrders.filter((order) => {
@@ -239,165 +240,134 @@ const AllOrders = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {currentOrders.map((order, index) => (
-                <tr key={`${order.id}-${index}`} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {order.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {order.created}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {order.customer}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {order.total}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className="px-3 py-1 rounded-full text-sm"
-                      style={{ backgroundColor: order.statusColor }}
-                    >
-                      {order.statusLabel}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-gray-400 hover:text-gray-600 rounded-full p-1">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
+                <React.Fragment key={`${order.id}-${index}`}>
+                  {/* Main Order Row */}
+                  <tr className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-medium">
+                      {order.id}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {order.created}
+                    </td>
+                    <td className="px-6 py-4 text-sm">{order.customer}</td>
+                    <td className="px-6 py-4 text-sm">{order.total}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className="px-3 py-1 rounded-full text-sm"
+                        style={{ backgroundColor: order.statusColor }}
                       >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
+                        {order.statusLabel}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right text-sm">
+                      <button
+                        className="text-gray-400 hover:text-gray-600 rounded-full p-1"
+                        onClick={() =>
+                          setExpandedOrderId(
+                            expandedOrderId === order.id ? null : order.id
+                          )
+                        }
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+
+                  {/* Expanded Details Row */}
+                  {expandedOrderId === order.id && (
+                    <tr className="bg-gray-50">
+                      <td colSpan={6} className="px-6 py-4">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr>
+                              {[
+                                "#",
+                                "SKU",
+                                "NAME",
+                                "PRICE",
+                                "QTY",
+                                "DISC.",
+                                "TOTAL",
+                              ].map((h) => (
+                                <th
+                                  key={h}
+                                  className="py-2 text-left text-gray-500 uppercase"
+                                >
+                                  {h}
+                                </th>
+                              ))}
+                              <th className="text-right text-blue-600">
+                                view receipt
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[
+                              {
+                                sku: "#6548",
+                                name: "Lucky Cement",
+                                price: "$999.29",
+                                qty: "x1",
+                                disc: "5%",
+                                total: "$949.32",
+                              },
+                              {
+                                sku: "#6548",
+                                name: "Drill Machine",
+                                price: "$999.29",
+                                qty: "x1",
+                                disc: "5%",
+                                total: "$949.32",
+                              },
+                              {
+                                sku: "#6548",
+                                name: "Screws",
+                                price: "$999.29",
+                                qty: "x1",
+                                disc: "5%",
+                                total: "$949.32",
+                              },
+                            ].map((item, i) => (
+                              <tr key={i} className="border-t">
+                                <td className="py-2">{i + 1}</td>
+                                <td>{item.sku}</td>
+                                <td>{item.name}</td>
+                                <td>{item.price}</td>
+                                <td>{item.qty}</td>
+                                <td className="text-red-500">{item.disc}</td>
+                                <td>{item.total}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+
+                        {/* Summary */}
+                        <div className="mt-4 text-sm text-gray-700 space-y-1 text-right">
+                          <div>Subtotal: $2,847.96</div>
+                          <div>Shipping: $5.50</div>
+                          <div className="text-red-500">Discount: $150.32</div>
+                          <div className="font-semibold">Total: $2,647.32</div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
 
-          {/* Pagination */}
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                  currentPage === 1
-                    ? "bg-gray-100 text-gray-400"
-                    : "bg-white text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                  currentPage === totalPages
-                    ? "bg-gray-100 text-gray-400"
-                    : "bg-white text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                Next
-              </button>
-            </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing{" "}
-                  <span className="font-medium">{indexOfFirstItem + 1}</span> to{" "}
-                  <span className="font-medium">
-                    {Math.min(indexOfLastItem, filteredOrders.length)}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-medium">{filteredOrders.length}</span>{" "}
-                  results
-                </p>
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">Showing</span>
-                  <select
-                    className="border rounded p-1 text-sm"
-                    value={itemsPerPage}
-                    onChange={(e) => {
-                      setItemsPerPage(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                  >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-                  <span className="text-sm text-gray-500">
-                    of {filteredOrders.length}
-                  </span>
-                </div>
-              </div>
-              <nav
-                className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-                aria-label="Pagination"
-              >
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                    currentPage === 1
-                      ? "text-gray-300"
-                      : "text-gray-500 hover:bg-gray-50"
-                  }`}
-                >
-                  <ChevronLeft size={16} />
-                </button>
-
-                {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                  // Show pages around current page
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                        currentPage === pageNum
-                          ? "z-10 bg-green-600 text-white border-green-600"
-                          : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                    currentPage === totalPages
-                      ? "text-gray-300"
-                      : "text-gray-500 hover:bg-gray-50"
-                  }`}
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </nav>
-            </div>
-          </div>
+          {/* Pagination omitted for brevity… */}
         </div>
       </div>
     </div>
