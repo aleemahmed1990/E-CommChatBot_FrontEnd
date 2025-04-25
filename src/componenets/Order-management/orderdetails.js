@@ -87,6 +87,18 @@ export default function OrderDetails() {
               >
                 Manage All-orders
               </button>
+              <button
+                className="bg-blue-600 text-white px-4 py-2 rounded-md ml-4"
+                onClick={() => navigate("/non-delivered-orders")}
+              >
+                View non-delivered orders
+              </button>
+              <button
+                className="bg-blue-600 text-white px-4 py-2 rounded-md ml-4"
+                onClick={() => navigate("/view-refunds")}
+              >
+                View Refunds
+              </button>
             </div>
           </section>
 
@@ -103,6 +115,7 @@ export default function OrderDetails() {
                   <div className="flex items-center gap-4">
                     <Package className="w-12 h-12 text-gray-700" />
                     <div>
+                      View Refunds
                       <div className="font-medium">{item.name}</div>
                       <div className="text-sm text-gray-500">
                         Qty: {item.qty}

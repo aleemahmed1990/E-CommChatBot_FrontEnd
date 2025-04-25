@@ -277,6 +277,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Truck size={18} />,
           name: "Delivery ( driver and office emp )",
           access: "",
+          path: "/Delivery",
         },
         {
           id: 6,
@@ -284,6 +285,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <AlertCircle size={18} />,
           name: "Non-delivered orders or issues ( office...complain office )",
           access: "",
+          path: "/non-delivered-orders",
         },
         {
           id: 7,
@@ -291,6 +293,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <RefreshCcw size={18} />,
           name: "Refund / complain ( office...complain office )",
           access: "",
+          path: "/view-refunds",
         },
         {
           id: 8,
@@ -298,6 +301,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <History size={18} />,
           name: "History orders same # 3",
           access: "",
+          path: "/all-orders",
         },
       ],
     },
@@ -310,7 +314,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Archive size={18} />,
           name: "Product list everyone ( View can only check )",
           access: "",
-          path: "/productlist",
+          path: "/admin/Products",
         },
         {
           id: 33,

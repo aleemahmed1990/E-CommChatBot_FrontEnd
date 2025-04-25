@@ -22,6 +22,11 @@ import BankAccountView from "./componenets/Transactions/BankAccountview";
 import OrderManagementDelivery from "./componenets/Order-management/delivery-orders";
 import OrderManagementPickup from "./componenets/Order-management/pickup-orders";
 import OrderDetails from "./componenets/Order-management/orderdetails";
+import DeliveryMain from "./componenets/Delivery&complaints/Delivery";
+import AllDeliveryComplaints from "./componenets/Delivery&complaints/Allcomplaints";
+import NonDeliveredOrders from "./componenets/Orders/Non-delivered-orders";
+import Driverchat from "./componenets/Order-management/drivers-chat";
+import RefundComplain from "./componenets/Orders/Refunds";
 
 function App() {
   return (
@@ -109,6 +114,47 @@ function App() {
             </>
           }
         />
+        <Route
+          path="/Delivery"
+          element={
+            <>
+              <DeliveryMain />
+            </>
+          }
+        />
+        <Route
+          path="/Driver-chat"
+          element={
+            <>
+              <Driverchat />
+            </>
+          }
+        />
+        <Route
+          path="/view-refunds"
+          element={
+            <>
+              <RefundComplain />
+            </>
+          }
+        />
+        <Route
+          path="/Complaints"
+          element={
+            <>
+              <AllDeliveryComplaints />
+            </>
+          }
+        />
+        <Route
+          path="/non-delivered-orders"
+          element={
+            <>
+              <NonDeliveredOrders />
+            </>
+          }
+        />
+
         <Route
           path="/ordersINcart"
           element={
