@@ -8,11 +8,16 @@ import {
   ArrowLeft,
   Package,
   Phone,
+  Check,
 } from "lucide-react";
 
 export default function OrderManagementPickup() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
+  const [orderReadyStatus, setOrderReadyStatus] = useState({
+    "6am-9am": false,
+    "930am-1pm": false,
+  });
 
   // Dummy data for table
   const orders = [
@@ -75,11 +80,23 @@ export default function OrderManagementPickup() {
   const handleManageDelivery = () => {
     navigate("/delivery-orders");
   };
+  const handleManagePickup = () => {
+    navigate("/pickup-orders");
+  };
+
   const handleViewOrderDetails = (orderId) => {
     navigate(`/order-details`);
   };
+
   const handleCallCustomer = () => {
     console.log("Calling customer...");
+  };
+
+  const toggleOrderReady = (slot) => {
+    setOrderReadyStatus((prev) => ({
+      ...prev,
+      [slot]: !prev[slot],
+    }));
   };
 
   return (
@@ -107,8 +124,13 @@ export default function OrderManagementPickup() {
               className="flex items-center gap-2 bg-green-500 text-white px-5 py-3 rounded-full shadow hover:bg-green-600"
               onClick={handleManageDelivery}
             >
-              <Package className="w-5 h-5" />
-              Manage Delivery Orders
+              4A Manage Delivery Orders
+            </button>
+            <button
+              className="flex items-center ml-5 gap-2 bg-green-500 text-white px-5 py-3 rounded-full shadow hover:bg-green-600"
+              onClick={handleManagePickup}
+            >
+              4B Manage Pickup orders
             </button>
           </div>
 
@@ -119,7 +141,7 @@ export default function OrderManagementPickup() {
           </div>
 
           {/* Big heading */}
-          <h1 className="text-5xl font-bold text-black mb-10">pickup</h1>
+          <h1 className="text-5xl font-bold text-black mb-10">pick up</h1>
 
           {/* Pickup slots with out-of-stock markup */}
           <div className="space-y-6 mb-8">
@@ -140,9 +162,28 @@ export default function OrderManagementPickup() {
                         <div>Order id# {data.id}</div>
                         <div>Fully allocated</div>
                       </div>
-                      <button className="text-gray-500">
-                        <MoreVertical className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center gap-4">
+                        <div
+                          className="flex items-center cursor-pointer"
+                          onClick={() => toggleOrderReady(slot)}
+                        >
+                          <div
+                            className={`w-6 h-6 flex items-center justify-center border rounded mr-2 ${
+                              orderReadyStatus[slot]
+                                ? "bg-amber-500 border-amber-500"
+                                : "bg-white border-gray-300"
+                            }`}
+                          >
+                            {orderReadyStatus[slot] && (
+                              <Check className="w-4 h-4 text-white" />
+                            )}
+                          </div>
+                          <span>products ready</span>
+                        </div>
+                        <button className="text-gray-500">
+                          <MoreVertical className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                     {/* Items list */}
                     {data.items.map((item, idx) => (
@@ -171,9 +212,12 @@ export default function OrderManagementPickup() {
                       </div>
                     ))}
                     {/* Call button */}
-                    <div className="p-2 flex justify-end">
+                    <div className="p-2 flex justify-between">
+                      <div className="text-sm text-gray-500">
+                        call only if nothing to deliver
+                      </div>
                       <button
-                        className="flex items-center gap-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                        className="flex items-center gap-1 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
                         onClick={handleCallCustomer}
                       >
                         <Phone className="w-4 h-4" />

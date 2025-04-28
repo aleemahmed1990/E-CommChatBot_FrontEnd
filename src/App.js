@@ -27,6 +27,19 @@ import AllDeliveryComplaints from "./componenets/Delivery&complaints/Allcomplain
 import NonDeliveredOrders from "./componenets/Orders/Non-delivered-orders";
 import Driverchat from "./componenets/Order-management/drivers-chat";
 import RefundComplain from "./componenets/Orders/Refunds";
+import InventoryCheck from "./componenets/Inventory/InverntoryCheck";
+import OutOfStockList from "./componenets/Inventory/outofstocklist";
+import OrderListApprovedStock from "./componenets/Inventory/orderlist";
+import ShowOrder from "./componenets/Inventory/showOrder";
+import FillingInventory from "./componenets/Inventory/FillIinventory";
+import InventoryControlCheck from "./componenets/Inventory/InventoryControl";
+import CreateDiscount from "./componenets/Discounts/createDiscounts";
+import AllDiscounts from "./componenets/Discounts/allDiscounts";
+import DiscountedProductsInvA from "./componenets/Discounts/DiscountedInventory";
+import InventoryControlCheckDiscount from "./componenets/Discounts/Inventorycontrol(discounts)";
+import ReferralDashboard from "./componenets/Refferal/referralDashboard";
+import ReferralDetail from "./componenets/Refferal/referralDetail";
+import ReferralProfit from "./componenets/Refferal/referralProfits";
 
 function App() {
   return (
@@ -163,6 +176,111 @@ function App() {
             </>
           }
         />
+        <Route
+          path="/inventory-check"
+          element={
+            <>
+              <InventoryCheck />
+            </>
+          }
+        />
+        <Route
+          path="/out-of-stock"
+          element={
+            <>
+              <OutOfStockList />
+            </>
+          }
+        />
+        <Route
+          path="/order-list"
+          element={
+            <>
+              <OrderListApprovedStock />
+            </>
+          }
+        />
+        <Route
+          path="/show-order"
+          element={
+            <>
+              <ShowOrder />
+            </>
+          }
+        />
+        <Route
+          path="/Fill-inventory"
+          element={
+            <>
+              <FillingInventory />
+            </>
+          }
+        />
+        <Route
+          path="/inventory-control"
+          element={
+            <>
+              <InventoryControlCheck />
+            </>
+          }
+        />
+        <Route
+          path="/create-discount"
+          element={
+            <>
+              <CreateDiscount />
+            </>
+          }
+        />
+        <Route
+          path="/all-discounts"
+          element={
+            <>
+              <AllDiscounts />
+            </>
+          }
+        />
+        <Route
+          path="/discount-inventory"
+          element={
+            <>
+              <DiscountedProductsInvA />
+            </>
+          }
+        />
+        <Route
+          path="/discount-inventory-check"
+          element={
+            <>
+              <InventoryControlCheckDiscount />
+            </>
+          }
+        />
+        <Route
+          path="/referrals"
+          element={
+            <>
+              <ReferralDashboard />
+            </>
+          }
+        />
+        <Route
+          path="/referral-detail"
+          element={
+            <>
+              <ReferralDetail />
+            </>
+          }
+        />
+        <Route
+          path="/referral-profits"
+          element={
+            <>
+              <ReferralProfit />
+            </>
+          }
+        />
+
         <Route
           path="admin/supplier/edit"
           element={

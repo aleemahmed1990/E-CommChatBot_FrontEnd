@@ -15,6 +15,8 @@ import {
 export default function OrderManagementDelivery() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
+  const [activeTimeSlotOrder, setActiveTimeSlotOrder] = useState(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
 
   // Dummy data for drivers
   const drivers = [
@@ -50,6 +52,7 @@ export default function OrderManagementDelivery() {
       ],
       deliveryTime: "Jan 31, 2025 9:00 AM",
       allocationStatus: "",
+      requestedTime: "morning 6-9 am",
     },
     {
       id: "12A",
@@ -62,6 +65,7 @@ export default function OrderManagementDelivery() {
       ],
       deliveryTime: "Jan 31, 2025 10:00 AM",
       allocationStatus: "Lucky Cement, Golden Screws",
+      requestedTime: "morning 6-9 am",
     },
     {
       id: "12A",
@@ -74,6 +78,7 @@ export default function OrderManagementDelivery() {
       ],
       deliveryTime: "Jan 31, 2025 11:00 AM",
       allocationStatus: "",
+      requestedTime: "morning 6-9 am",
     },
   ];
 
@@ -83,29 +88,31 @@ export default function OrderManagementDelivery() {
   const [selectedDriver2, setSelectedDriver2] = useState("");
   const [selectedPickupType, setSelectedPickupType] = useState("");
 
-  // Dummy truck orders
-  const truckOrders = {
+  // Dummy truck orders with initial checkbox states
+  const [truckOrders, setTruckOrders] = useState({
     "6am-9am": [
       {
         id: "1234",
         items: [
-          { name: "Lucky Cement", quantity: "1 kg" },
-          { name: "Golden screws", quantity: "1 bag" },
+          { name: "Lucky Cement", quantity: "1 kg", onTruck: false },
+          { name: "Golden screws", quantity: "1 bag", onTruck: true },
         ],
         status: "Fully allocated",
+        truckOnDeliver: false,
       },
     ],
     "930am-1pm": [
       {
         id: "1234",
         items: [
-          { name: "Lucky Cement", quantity: "1 kg" },
-          { name: "Golden screws", quantity: "1 bag" },
+          { name: "Lucky Cement", quantity: "1 kg", onTruck: false },
+          { name: "Golden screws", quantity: "1 bag", onTruck: false },
         ],
         status: "Fully allocated",
+        truckOnDeliver: false,
       },
     ],
-  };
+  });
 
   const handleViewOrderDetails = (orderId) => {
     navigate(`/order-details`);
@@ -113,6 +120,104 @@ export default function OrderManagementDelivery() {
 
   const handleManagePickup = () => {
     navigate("/pickup-orders");
+  };
+  const handleManagedelivery = () => {
+    navigate("/delivery-orders");
+  };
+
+  const handleToggleTimeSlotSelection = (orderId) => {
+    if (activeTimeSlotOrder === orderId) {
+      setActiveTimeSlotOrder(null);
+    } else {
+      setActiveTimeSlotOrder(orderId);
+    }
+  };
+
+  const handleSelectTimeSlot = (timeSlot) => {
+    setSelectedTimeSlot(timeSlot);
+  };
+
+  const handleDoneTimeSlot = () => {
+    // Logic to allocate order to time slot
+    console.log(
+      `Order ${activeTimeSlotOrder} allocated to ${selectedTimeSlot}`
+    );
+    setActiveTimeSlotOrder(null);
+  };
+
+  const toggleProductOnTruck = (slotKey, orderIndex, itemIndex) => {
+    const updatedOrders = { ...truckOrders };
+    updatedOrders[slotKey][orderIndex].items[itemIndex].onTruck =
+      !updatedOrders[slotKey][orderIndex].items[itemIndex].onTruck;
+    setTruckOrders(updatedOrders);
+  };
+
+  const toggleTruckOnDeliver = (slotKey, orderIndex) => {
+    const updatedOrders = { ...truckOrders };
+    updatedOrders[slotKey][orderIndex].truckOnDeliver =
+      !updatedOrders[slotKey][orderIndex].truckOnDeliver;
+    setTruckOrders(updatedOrders);
+  };
+
+  // Modal overlay for time slot selection
+  const TimeSlotModal = () => {
+    if (!activeTimeSlotOrder) return null;
+
+    const order = orders.find((o) => o.id === activeTimeSlotOrder) || {};
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-md p-6 w-96 max-w-full">
+          <div className="mb-3 font-medium text-red-500">
+            requested time of delivery :{" "}
+            {order.requestedTime || "morning 6-9 am"}
+          </div>
+          <div className="mb-3 font-medium">
+            Which time slots do you want to allocate this order?
+          </div>
+          <div className="space-y-2">
+            <label className="flex items-center border rounded-md p-2 cursor-pointer">
+              <input
+                type="radio"
+                name="timeSlot"
+                className="h-4 w-4 text-orange-500"
+                onChange={() => handleSelectTimeSlot("7:00 to 9:00 AM")}
+                checked={selectedTimeSlot === "7:00 to 9:00 AM"}
+              />
+              <span className="ml-2">7:00 to 9:00 AM in the morning</span>
+            </label>
+            <label className="flex items-center border rounded-md p-2 cursor-pointer">
+              <input
+                type="radio"
+                name="timeSlot"
+                className="h-4 w-4"
+                onChange={() => handleSelectTimeSlot("9:30 to 11:00 AM")}
+                checked={selectedTimeSlot === "9:30 to 11:00 AM"}
+              />
+              <span className="ml-2">9:30 to 11:00 AM in the morning</span>
+            </label>
+            <label className="flex items-center border rounded-md p-2 cursor-pointer">
+              <input
+                type="radio"
+                name="timeSlot"
+                className="h-4 w-4"
+                onChange={() => handleSelectTimeSlot("11:30 to 2:00 PM")}
+                checked={selectedTimeSlot === "11:30 to 2:00 PM"}
+              />
+              <span className="ml-2">Later</span>
+            </label>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              className="bg-blue-500 text-white px-4 py-1 rounded-md"
+              onClick={handleDoneTimeSlot}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -133,7 +238,7 @@ export default function OrderManagementDelivery() {
           <header className="bg-gray-800 text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="ml-4 text-lg font-medium">
-                4.Order management delivery
+                4A.Order management delivery
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -144,11 +249,16 @@ export default function OrderManagementDelivery() {
           <main className="p-4 max-w-6xl mx-auto">
             <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-6 rounded-xl mb-6 flex justify-center">
               <button
-                className="flex items-center gap-2 bg-white text-indigo-600 px-5 py-3 rounded-full shadow-lg hover:bg-gray-100"
+                className="flex items-center gap-2  bg-white text-indigo-600 px-5 py-3 rounded-full shadow-lg hover:bg-gray-100"
+                onClick={handleManagedelivery}
+              >
+                4A Manage Delivery Orders
+              </button>
+              <button
+                className="flex items-center gap-2 ml-5 bg-white text-indigo-600 px-5 py-3 rounded-full shadow-lg hover:bg-gray-100"
                 onClick={handleManagePickup}
               >
-                <Truck className="w-5 h-5" />
-                Manage Pickup Orders
+                4B Manage Pickup Orders
               </button>
             </div>
 
@@ -284,13 +394,33 @@ export default function OrderManagementDelivery() {
                               </div>
                             </div>
                             <div className="flex items-center gap-4">
-                              <CheckCircle className="w-5 h-5 text-green-500" />
-                              <span className="text-sm">On Truck</span>
-                              <Truck className="w-5 h-5 text-blue-500" />
-                              <span className="text-sm">In Transit</span>
+                              <label className="flex items-center gap-1">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4"
+                                  checked={item.onTruck}
+                                  onChange={() =>
+                                    toggleProductOnTruck(slot, idx, i)
+                                  }
+                                />
+                                <span className="text-sm">
+                                  products on truck
+                                </span>
+                              </label>
                             </div>
                           </div>
                         ))}
+                        <div className="mt-4 pt-2 border-t border-gray-300 flex justify-end">
+                          <label className="flex items-center gap-1">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              checked={order.truckOnDeliver}
+                              onChange={() => toggleTruckOnDeliver(slot, idx)}
+                            />
+                            <span className="text-sm">Truck on Delivery</span>
+                          </label>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -330,7 +460,12 @@ export default function OrderManagementDelivery() {
                         }
                       >
                         <td className="p-3 border-r">
-                          <button className="text-gray-500">
+                          <button
+                            className="text-gray-500"
+                            onClick={() =>
+                              handleToggleTimeSlotSelection(order.id)
+                            }
+                          >
                             <MoreVertical className="w-5 h-5" />
                           </button>
                         </td>
@@ -385,6 +520,9 @@ export default function OrderManagementDelivery() {
           </main>
         </div>
       </div>
+
+      {/* Time slot selection modal */}
+      <TimeSlotModal />
     </div>
   );
 }

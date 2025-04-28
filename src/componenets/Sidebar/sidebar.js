@@ -322,6 +322,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Clipboard size={18} />,
           name: "Inventory check ( just controlling staff to double check and corret )",
           access: "",
+          path: "/inventory-check",
         },
         {
           id: 35,
@@ -329,6 +330,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <AlertTriangle size={18} />,
           name: "Out of Stock...order stock",
           access: "",
+          path: "/out-of-stock",
         },
         {
           id: 36,
@@ -357,6 +359,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Package size={18} />,
           name: "Fill inventory (articial emp)",
           access: "",
+          path: "/Fill-inventory",
         },
         {
           id: 55,
@@ -364,6 +367,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Clipboard size={18} />,
           name: "Inventory control (articial emp)",
           access: "",
+          path: "/inventory-control",
         },
         {
           id: 56,
@@ -384,6 +388,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Percent size={18} />,
           name: "Create discount (articial emp)",
           access: "",
+          path: "/create-discount",
         },
         {
           id: 72,
@@ -391,6 +396,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Percent size={18} />,
           name: "All Discount list, everyone )",
           access: "",
+          path: "/all-discounts",
         },
         {
           id: 73,
@@ -398,6 +404,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Percent size={18} />,
           name: "Discounted product inventory",
           access: "",
+          path: "/discount-inventory",
         },
         {
           id: 74,
@@ -484,6 +491,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Users size={18} />,
           name: "Referrals",
           access: "Video verification & sharing discount for each referral",
+          path: "/referrals",
         },
       ],
     },
