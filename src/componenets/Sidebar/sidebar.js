@@ -11,6 +11,7 @@ import {
   AlertCircle,
   RefreshCcw,
   History,
+  Calendar,
   Archive,
   Clipboard,
   AlertTriangle,
@@ -32,6 +33,9 @@ const Sidebar = ({ onSectionClick }) => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const toggleSettings = () => setSettingsOpen(!settingsOpen);
 
   // Check if screen is mobile size
   useEffect(() => {
@@ -441,6 +445,7 @@ const Sidebar = ({ onSectionClick }) => {
           icon: <Users size={18} />,
           name: "Customers ( articial emp )",
           access: "Timeline chat All orders",
+          path: "/customers",
         },
       ],
     },
@@ -514,10 +519,12 @@ const Sidebar = ({ onSectionClick }) => {
           id: "settings",
           icon: <Settings size={18} />,
           name: "Settings",
-          access: "",
+          isCollapsible: true,
+          onClick: toggleSettings,
         },
       ],
     },
+
     {
       title: "SUPPORT",
       sections: [
@@ -533,223 +540,208 @@ const Sidebar = ({ onSectionClick }) => {
 
   return (
     <>
-      {/* Toggle Button for Mobile */}
+      {/* Mobile toggle */}
       <button
         onClick={toggleSidebar}
-        className="fixed top-4 left-4 z-50 lg:hidden bg-black text-white p-2 rounded-full shadow-lg hover:bg-gray-800 transition-all duration-200"
-        aria-label={isOpen ? "Close Menu" : "Open Menu"}
+        className="fixed top-4 left-4 z-50 lg:hidden bg-black text-white p-2 rounded-full"
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* Overlay for mobile */}
+      {/* Overlay */}
       {isOpen && isMobile && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="fixed inset-0 bg-black bg-opacity-50"
           onClick={() => setIsOpen(false)}
-        ></div>
+        />
       )}
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full bg-gray-900 text-gray-200 transition-all duration-300 ease-in-out z-40 overflow-hidden shadow-2xl ${
+        className={`fixed top-0 left-0 h-full bg-gray-900 text-gray-200 transition-all z-40 shadow-xl overflow-y-auto ${
           isOpen ? "w-80" : "w-0"
         }`}
       >
-        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
-          {/* Header */}
-          <div className="p-6 bg-gradient-to-r from-gray-800 to-gray-900 flex justify-between items-center sticky top-0 z-10 border-b border-gray-700">
-            <div className="font-bold text-xl flex items-center gap-3 text-white">
-              <Home size={24} className="text-blue-400" />
-              <span>Dashboard</span>
-            </div>
-            <button
-              onClick={() => setShowLogoutConfirm(true)}
-              className="text-gray-300 hover:text-red-400 transition-colors"
-              aria-label="Logout"
-            >
-              <LogOut size={22} />
-            </button>
+        {/* Header */}
+        <div className="p-6 bg-gradient-to-r from-gray-800 to-gray-900 flex justify-between items-center sticky top-0">
+          <div className="flex items-center gap-3 text-white text-xl font-bold">
+            <Home size={24} className="text-blue-400" />
+            <span>Dashboard</span>
           </div>
+          <button
+            onClick={() => setShowLogoutConfirm(true)}
+            className="text-gray-300 hover:text-red-400"
+          >
+            <LogOut size={22} />
+          </button>
+        </div>
 
-          {/* Sections */}
-          <div className="p-3">
-            {sectionGroups.map((group, groupIndex) => (
-              <div key={groupIndex} className="mb-6">
-                <div className="px-4 py-3 text-gray-700 text-sm font-medium uppercase tracking-wider bg-gradient-to-r from-gray-100 to-beige-100 border-l-2 border-blue-500 rounded-md mb-2">
-                  {group.title}
-                </div>
-                {group.sections.length > 0 && (
-                  <div className="space-y-1 ml-2">
-                    {group.sections.map((section) => (
-                      <div key={section.id}>
-                        <button
-                          onClick={() => {
-                            if (section.isCollapsible) {
-                              section.onClick();
-                            } else if (section.path) {
-                              handleSectionClick(section.id, section.path);
-                            } else {
-                              handleSectionClick(section.id);
-                            }
-                          }}
-                          className={`w-full text-left px-4 py-3 rounded-md transition-colors flex items-center gap-3 ${
-                            section.highlight
-                              ? "bg-gray-700 border-l-2 border-purple-500 hover:bg-gray-600"
-                              : section.isCollapsible && adminOpen
-                              ? "bg-gray-700 hover:bg-gray-600"
-                              : "hover:bg-gray-800"
-                          } ${
-                            section.path || section.isCollapsible
-                              ? "cursor-pointer"
-                              : ""
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            {section.number && (
-                              <span className="text-green-400 font-medium">
-                                {section.number}
-                              </span>
-                            )}
-                            <span
-                              className={
-                                section.highlight
-                                  ? "text-purple-400"
-                                  : "text-blue-400"
-                              }
-                            >
-                              {section.icon}
-                            </span>
-                          </div>
-                          <div className="flex-1 overflow-hidden">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium leading-tight">
-                                {formatMenuText(section.name)}
-                              </span>
-                              {section.isCollapsible ? (
-                                adminOpen ? (
-                                  <ChevronUp
-                                    size={16}
-                                    className="text-gray-400"
-                                  />
-                                ) : (
-                                  <ChevronDown
-                                    size={16}
-                                    className="text-gray-400"
-                                  />
-                                )
-                              ) : section.path ? (
-                                <ChevronRight
-                                  size={16}
-                                  className="text-gray-400"
-                                />
-                              ) : null}
-                            </div>
-                            {section.access && (
-                              <span className="text-xs text-gray-400 block truncate">
-                                {section.access}
-                              </span>
-                            )}
-                            {section.note && (
-                              <span className="text-xs text-gray-400 block truncate">
-                                {section.note}
-                              </span>
-                            )}
-                          </div>
-                        </button>
-
-                        {/* Admin Sub Menu */}
-                        {section.id === 100 && adminOpen && (
-                          <div className="ml-8 mt-1 space-y-1 border-l border-gray-700 pl-2">
-                            {adminSubItems.map((item) => (
-                              <div key={item.id}>
-                                <button
-                                  onClick={() =>
-                                    handleSectionClick(item.id, item.path)
-                                  }
-                                  className="w-full text-left px-3 py-2 rounded-md transition-colors flex items-center gap-2 hover:bg-gray-800"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    {item.number && (
-                                      <span className="text-green-400 font-medium text-xs">
-                                        {item.number}
-                                      </span>
-                                    )}
-                                    <span className="text-blue-400">
-                                      {item.icon}
-                                    </span>
-                                  </div>
-                                  <span className="text-sm text-gray-300">
-                                    {item.name}
-                                  </span>
-                                </button>
-
-                                {/* Third level (a, b options) */}
-                                {item.subItems && (
-                                  <div className="ml-4 mt-1 space-y-1 border-l border-gray-700 pl-2">
-                                    {item.subItems.map((subItem) => (
-                                      <button
-                                        key={subItem.id}
-                                        onClick={() =>
-                                          handleSectionClick(
-                                            subItem.id,
-                                            subItem.path
-                                          )
-                                        }
-                                        className="w-full text-left px-3 py-2 rounded-md transition-colors flex items-center gap-2 hover:bg-gray-800"
-                                      >
-                                        <span className="text-blue-400">
-                                          {subItem.icon}
-                                        </span>
-                                        <span className="text-sm text-gray-300">
-                                          {subItem.name}
-                                        </span>
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+        {/* Sections */}
+        <div className="p-3">
+          {sectionGroups.map((group, gi) => (
+            <div key={gi} className="mb-6">
+              <div className="px-4 py-2 text-sm font-medium uppercase bg-gray-800 rounded-md mb-2">
+                {group.title}
               </div>
-            ))}
+              <div className="space-y-1 ml-2">
+                {group.sections.map((section) => (
+                  <div key={section.id}>
+                    <button
+                      onClick={() => {
+                        if (section.isCollapsible) section.onClick();
+                        else if (section.path)
+                          handleSectionClick(section.id, section.path);
+                        else handleSectionClick(section.id);
+                      }}
+                      className={`
+                        w-full text-left px-4 py-2 flex items-center gap-3 rounded-md transition-colors
+                        ${
+                          section.highlight
+                            ? "bg-gray-700 border-l-2 border-purple-500"
+                            : ""
+                        }
+                        ${
+                          (section.isCollapsible &&
+                            section.id === 100 &&
+                            adminOpen) ||
+                          (section.isCollapsible &&
+                            section.id === "settings" &&
+                            settingsOpen)
+                            ? "bg-gray-700"
+                            : "hover:bg-gray-800"
+                        }
+                        ${
+                          section.path || section.isCollapsible
+                            ? "cursor-pointer"
+                            : ""
+                        }
+                      `}
+                    >
+                      <div className="flex items-center gap-2">
+                        {section.number && (
+                          <span className="text-green-400">
+                            {section.number}
+                          </span>
+                        )}
+                        <span className={`text-blue-400`}>{section.icon}</span>
+                      </div>
+                      <div className="flex-1 flex justify-between items-center">
+                        <span className="text-sm font-medium">
+                          {formatMenuText(section.name)}
+                        </span>
+                        {section.isCollapsible && section.id === 100 ? (
+                          adminOpen ? (
+                            <ChevronUp size={16} />
+                          ) : (
+                            <ChevronDown size={16} />
+                          )
+                        ) : section.isCollapsible &&
+                          section.id === "settings" ? (
+                          settingsOpen ? (
+                            <ChevronUp size={16} />
+                          ) : (
+                            <ChevronDown size={16} />
+                          )
+                        ) : section.path ? (
+                          <ChevronRight size={16} />
+                        ) : null}
+                      </div>
+                    </button>
 
-            {/* Footer - Extra professional touch */}
-            <div className="mt-8 mb-4 px-4 py-4 bg-gray-800 rounded-lg">
-              <div className="flex items-center justify-between text-sm text-gray-400">
-                <span>© 2025 Company Name</span>
-                <span>v2.3.1</span>
+                    {/* Admin Submenu */}
+                    {section.id === 100 && adminOpen && (
+                      <div className="ml-8 mt-1 space-y-1 border-l border-gray-700 pl-2">
+                        {adminSubItems.map((item) => (
+                          <div key={item.id}>
+                            <button
+                              onClick={() =>
+                                handleSectionClick(item.id, item.path)
+                              }
+                              className="w-full text-left px-3 py-2 flex items-center gap-2 rounded-md hover:bg-gray-800 transition-colors"
+                            >
+                              {item.number && (
+                                <span className="text-green-400 text-xs">
+                                  {item.number}
+                                </span>
+                              )}
+                              <span className="text-blue-400">{item.icon}</span>
+                              <span className="text-gray-300 text-sm">
+                                {item.name}
+                              </span>
+                            </button>
+
+                            {/* Third level */}
+                            {item.subItems && (
+                              <div className="ml-4 mt-1 space-y-1 border-l border-gray-700 pl-2">
+                                {item.subItems.map((sub) => (
+                                  <button
+                                    key={sub.id}
+                                    onClick={() =>
+                                      handleSectionClick(sub.id, sub.path)
+                                    }
+                                    className="w-full text-left px-3 py-2 flex items-center gap-2 rounded-md hover:bg-gray-800 transition-colors"
+                                  >
+                                    <span className="text-blue-400">
+                                      {sub.icon}
+                                    </span>
+                                    <span className="text-gray-300 text-sm">
+                                      {sub.name}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Settings Submenu */}
+                    {section.id === "settings" && settingsOpen && (
+                      <div className="ml-8 mt-1 space-y-1 border-l border-gray-700 pl-2">
+                        <button
+                          onClick={() =>
+                            handleSectionClick("celender", "/calendar")
+                          }
+                          className="w-full text-left px-3 py-2 flex items-center gap-2 rounded-md hover:bg-gray-800 transition-colors"
+                        >
+                          <Calendar size={16} className="text-blue-400" />
+                          <span className="text-gray-300 text-sm">
+                            Calender
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
+          ))}
+
+          {/* Footer */}
+          <div className="mt-8 p-4 bg-gray-800 rounded-lg text-gray-400 text-xs text-center">
+            © 2025 Company Name — v2.3.1
           </div>
         </div>
       </div>
 
-      {/* Logout Confirmation Modal */}
+      {/* Logout Confirmation */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-gray-800 text-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 border border-gray-700">
-            <h3 className="text-lg font-bold mb-4">Confirm Logout</h3>
-            <p className="mb-6 text-gray-300">
-              Are you sure you want to logout?
-            </p>
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center">
+          <div className="bg-gray-800 text-white p-6 rounded-lg shadow-xl">
+            <h3 className="mb-4 text-lg font-bold">Confirm Logout</h3>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowLogoutConfirm(false)}
-                className="px-4 py-2 border border-gray-600 rounded-md hover:bg-gray-700 text-gray-300"
+                className="px-4 py-2 border border-gray-600 rounded hover:bg-gray-700"
               >
                 Cancel
               </button>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 rounded hover:bg-red-700"
               >
-                Yes, Logout
+                Logout
               </button>
             </div>
           </div>

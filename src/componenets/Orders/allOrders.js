@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Home, ChevronRight, ChevronLeft, Filter } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Home, Filter } from "lucide-react";
 import Sidebar from "../Sidebar/sidebar";
 
 const OrderStatusFilters = [
@@ -11,7 +11,7 @@ const OrderStatusFilters = [
   },
   {
     id: "pay-not-confirmed",
-    label: "Pay for the order but not confirmed (double checking)",
+    label: "Pay for the order but not confirmed",
     color: "#ffc38b",
   },
   {
@@ -26,11 +26,7 @@ const OrderStatusFilters = [
   },
   { id: "allocated-driver", label: "Allocated to driver", color: "#90cdf4" },
   { id: "on-way", label: "On the way to deliver", color: "#73b5e8" },
-  {
-    id: "driver-confirmed",
-    label: "Driver confirmed order(handing over to customer)",
-    color: "#f4a593",
-  },
+  { id: "driver-confirmed", label: "Driver confirmed order", color: "#f4a593" },
   { id: "issue-driver", label: "Issue reported by driver", color: "#ffa07a" },
   {
     id: "issue-customer",
@@ -51,314 +47,186 @@ const OrderStatusFilters = [
   },
   {
     id: "order not picked",
-    label: "Orders waiting for customers to pick up",
+    label: "Orders waiting for customer pickup",
     color: "#c084fc",
   },
 ];
 
-// Generate dummy orders with various statuses
-const generateDummyOrders = () => {
-  const customers = [
-    "Joseph Wheeler",
-    "Emma Thompson",
-    "Michael Chen",
-    "Sofia Rodriguez",
-    "David Kim",
-  ];
-  const dummyOrders = [];
-
-  for (let i = 1; i <= 50; i++) {
-    const randomStatus =
-      OrderStatusFilters[Math.floor(Math.random() * OrderStatusFilters.length)];
-    const randomCustomer =
-      customers[Math.floor(Math.random() * customers.length)];
-    const randomTotal = Math.floor(Math.random() * 1000) + 50;
-
-    dummyOrders.push({
-      id: `#${65000 + i}`,
-      created: `${Math.floor(Math.random() * 60)} min ago`,
-      customer: randomCustomer,
-      total: `$${randomTotal}`,
-      status: randomStatus.id,
-      statusLabel: randomStatus.label,
-      statusColor: randomStatus.color,
-    });
-  }
-
-  return dummyOrders;
-};
-
-const AllOrders = () => {
-  const allOrders = generateDummyOrders();
+export default function AllOrders() {
+  const [orders, setOrders] = useState([]);
+  const [total, setTotal] = useState(0);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const itemsPerPage = 10;
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
-  // Filter orders based on selected status filters and search query
-  const filteredOrders = allOrders.filter((order) => {
-    const matchesFilter =
-      selectedFilters.length === 0 || selectedFilters.includes(order.status);
-    const matchesSearch =
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedFilters.length) params.set("status", selectedFilters.join(","));
+    if (searchQuery) params.set("search", searchQuery);
+    params.set("page", currentPage);
+    params.set("limit", itemsPerPage);
 
-  // Pagination
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentOrders = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+    (async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/orders?${params}`);
+        const payload = await res.json();
+        setOrders(Array.isArray(payload.orders) ? payload.orders : []);
+        setTotal(typeof payload.total === "number" ? payload.total : 0);
+      } catch (e) {
+        console.error("Fetch failed", e);
+        setOrders([]);
+        setTotal(0);
+      }
+    })();
+  }, [selectedFilters, searchQuery, currentPage]);
 
-  // Toggle filter selection
-  const toggleFilter = (filterId) => {
-    if (selectedFilters.includes(filterId)) {
-      setSelectedFilters(selectedFilters.filter((id) => id !== filterId));
-    } else {
-      setSelectedFilters([...selectedFilters, filterId]);
-    }
-    setCurrentPage(1); // Reset to first page when filter changes
+  const toggleFilter = (id) => {
+    setSelectedFilters((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+    setCurrentPage(1);
   };
 
-  // Handle page change
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
+  if (!Array.isArray(orders)) return null;
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
       <Sidebar
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
-      {/* Main Content */}
       <div
         className={`transition-all duration-300 ${
           isSidebarOpen ? "lg:ml-80" : ""
         } w-full bg-gray-50 p-4`}
       >
-        {/* Header with Filters */}
-        <div className="bg-purple-900 text-white p-4 flex flex-wrap justify-between items-center">
-          <div className="flex items-center">
-            <Home className="mr-2" size={20} />
-            <h1 className="text-xl font-semibold">3. All Orders</h1>
-          </div>
+        <div className="bg-purple-900 text-white p-4 flex items-center">
+          <Home className="mr-2" size={20} />
+          <h1 className="text-xl font-semibold">3. All Orders</h1>
         </div>
 
-        {/* Filters */}
-        <div className="p-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 mb-4">
-            {OrderStatusFilters.map((filter) => (
-              <div
-                key={filter.id}
-                className={`rounded px-2 py-1 text-center text-sm cursor-pointer transition-all flex items-center ${
-                  selectedFilters.includes(filter.id)
-                    ? "ring-2 ring-green-500"
-                    : ""
-                }`}
-                style={{ backgroundColor: filter.color }}
-                onClick={() => toggleFilter(filter.id)}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedFilters.includes(filter.id)}
-                  onChange={() => {}}
-                  className="mr-2"
-                />
-                <span className="truncate">{filter.label}</span>
-              </div>
-            ))}
-          </div>
+        <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+          {OrderStatusFilters.map((f) => (
+            <div
+              key={f.id}
+              onClick={() => toggleFilter(f.id)}
+              className={`cursor-pointer flex items-center px-2 py-1 rounded text-sm ${
+                selectedFilters.includes(f.id) ? "ring-2 ring-green-500" : ""
+              }`}
+              style={{ backgroundColor: f.color }}
+            >
+              <input
+                type="checkbox"
+                checked={selectedFilters.includes(f.id)}
+                readOnly
+                className="mr-2"
+              />
+              <span className="truncate">{f.label}</span>
+            </div>
+          ))}
         </div>
 
-        {/* Search and Filter controls */}
-        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 mb-4">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              placeholder="Search by order id"
-              className="w-full pl-3 pr-10 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button className="absolute right-3 top-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </button>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">Filter by date range</span>
-            <button className="flex items-center px-3 py-2 border rounded-md text-sm">
-              <Filter size={16} className="mr-2" />
-              <span>Select dates</span>
-            </button>
-          </div>
+        <div className="flex space-x-4 mb-4">
+          <input
+            type="text"
+            placeholder="Search by order id"
+            className="flex-1 border px-3 py-2 rounded focus:outline-none"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button className="flex items-center px-3 py-2 border rounded">
+            <Filter className="mr-2" size={16} />
+            <span>Select dates</span>
+          </button>
         </div>
 
-        {/* Orders Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                {[
+                  "Order ID",
+                  "Created",
+                  "Customer",
+                  "Total",
+                  "Status",
+                  "Actions",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {currentOrders.map((order, index) => (
-                <React.Fragment key={`${order.id}-${index}`}>
-                  {/* Main Order Row */}
+            <tbody>
+              {orders.map((o) => (
+                <React.Fragment key={o.orderId}>
                   <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium">
-                      {order.id}
-                    </td>
+                    <td className="px-6 py-4 text-sm">{o.orderId}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {order.created}
+                      {new Date(o.created).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 text-sm">{order.customer}</td>
-                    <td className="px-6 py-4 text-sm">{order.total}</td>
+                    <td className="px-6 py-4 text-sm">{o.customer}</td>
+                    <td className="px-6 py-4 text-sm">{o.totalAmount}</td>
                     <td className="px-6 py-4">
                       <span
                         className="px-3 py-1 rounded-full text-sm"
-                        style={{ backgroundColor: order.statusColor }}
+                        style={{
+                          backgroundColor: OrderStatusFilters.find(
+                            (f) => f.id === o.status
+                          )?.color,
+                        }}
                       >
-                        {order.statusLabel}
+                        {
+                          OrderStatusFilters.find((f) => f.id === o.status)
+                            ?.label
+                        }
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right text-sm">
+                    <td className="px-6 py-4 text-right">
                       <button
-                        className="text-gray-400 hover:text-gray-600 rounded-full p-1"
                         onClick={() =>
                           setExpandedOrderId(
-                            expandedOrderId === order.id ? null : order.id
+                            expandedOrderId === o.orderId ? null : o.orderId
                           )
                         }
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
+                        ▶
                       </button>
                     </td>
                   </tr>
-
-                  {/* Expanded Details Row */}
-                  {expandedOrderId === order.id && (
+                  {expandedOrderId === o.orderId && (
                     <tr className="bg-gray-50">
                       <td colSpan={6} className="px-6 py-4">
                         <table className="w-full text-sm">
                           <thead>
                             <tr>
-                              {[
-                                "#",
-                                "SKU",
-                                "NAME",
-                                "PRICE",
-                                "QTY",
-                                "DISC.",
-                                "TOTAL",
-                              ].map((h) => (
-                                <th
-                                  key={h}
-                                  className="py-2 text-left text-gray-500 uppercase"
-                                >
-                                  {h}
-                                </th>
-                              ))}
-                              <th className="text-right text-blue-600">
-                                view receipt
-                              </th>
+                              <th className="py-2 text-left">#</th>
+                              <th className="py-2 text-left">Product</th>
+                              <th className="py-2 text-left">Qty</th>
+                              <th className="py-2 text-left">Unit Price</th>
+                              <th className="py-2 text-left">Line Total</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {[
-                              {
-                                sku: "#6548",
-                                name: "Lucky Cement",
-                                price: "$999.29",
-                                qty: "x1",
-                                disc: "5%",
-                                total: "$949.32",
-                              },
-                              {
-                                sku: "#6548",
-                                name: "Drill Machine",
-                                price: "$999.29",
-                                qty: "x1",
-                                disc: "5%",
-                                total: "$949.32",
-                              },
-                              {
-                                sku: "#6548",
-                                name: "Screws",
-                                price: "$999.29",
-                                qty: "x1",
-                                disc: "5%",
-                                total: "$949.32",
-                              },
-                            ].map((item, i) => (
+                            {o.items.map((item, i) => (
                               <tr key={i} className="border-t">
                                 <td className="py-2">{i + 1}</td>
-                                <td>{item.sku}</td>
-                                <td>{item.name}</td>
+                                <td>{item.productName}</td>
+                                <td>{item.quantity}</td>
                                 <td>{item.price}</td>
-                                <td>{item.qty}</td>
-                                <td className="text-red-500">{item.disc}</td>
-                                <td>{item.total}</td>
+                                <td>{item.totalPrice}</td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
-
-                        {/* Summary */}
-                        <div className="mt-4 text-sm text-gray-700 space-y-1 text-right">
-                          <div>Subtotal: $2,847.96</div>
-                          <div>Shipping: $5.50</div>
-                          <div className="text-red-500">Discount: $150.32</div>
-                          <div className="font-semibold">Total: $2,647.32</div>
-                        </div>
                       </td>
                     </tr>
                   )}
@@ -366,12 +234,28 @@ const AllOrders = () => {
               ))}
             </tbody>
           </table>
+        </div>
 
-          {/* Pagination omitted for brevity… */}
+        <div className="flex justify-between items-center mt-4">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 border rounded"
+          >
+            Previous
+          </button>
+          <span>
+            Page {currentPage} of {Math.ceil(total / itemsPerPage)}
+          </span>
+          <button
+            onClick={() => setCurrentPage((p) => p + 1)}
+            disabled={currentPage * itemsPerPage >= total}
+            className="px-3 py-1 border rounded"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>
   );
-};
-
-export default AllOrders;
+}

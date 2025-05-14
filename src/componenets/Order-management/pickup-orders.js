@@ -9,6 +9,8 @@ import {
   Package,
   Phone,
   Check,
+  Bike,
+  Truck,
 } from "lucide-react";
 
 export default function OrderManagementPickup() {
@@ -87,6 +89,9 @@ export default function OrderManagementPickup() {
   const handleViewOrderDetails = (orderId) => {
     navigate(`/order-details`);
   };
+  const handleScooterDelivery = () => {
+    navigate("/scooter-delivery");
+  };
 
   const handleCallCustomer = () => {
     console.log("Calling customer...");
@@ -132,6 +137,14 @@ export default function OrderManagementPickup() {
             >
               4B Manage Pickup orders
             </button>
+
+            <button
+              className="flex items-center gap-2 ml-5 bg-white text-indigo-600 px-5 py-3 rounded-full shadow-lg hover:bg-gray-100"
+              onClick={handleScooterDelivery}
+            >
+              <Bike className="w-5 h-5" />
+              4C Scooter Delivery
+            </button>
           </div>
 
           {/* Alert */}
@@ -141,7 +154,11 @@ export default function OrderManagementPickup() {
           </div>
 
           {/* Big heading */}
-          <h1 className="text-5xl font-bold text-black mb-10">pick up</h1>
+          <h1 className="text-5xl font-bold text-black mb-10">
+            {" "}
+            <Package className="w-20 h-20 text-gray-700" />
+            pick up
+          </h1>
 
           {/* Pickup slots with out-of-stock markup */}
           <div className="space-y-6 mb-8">

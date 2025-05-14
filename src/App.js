@@ -1,5 +1,10 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import AdminLogin from "./componenets/Login/Login";
 import Sidebar from "./componenets/Sidebar/sidebar";
 import AllOrders from "./componenets/Orders/allOrders";
@@ -15,7 +20,7 @@ import SupplierViewOnly from "./componenets/Supplier/ViewSuppliers";
 import ViewProducts from "./componenets/Products/viewProducts";
 import AddCategory from "./componenets/Products/addProductCategory";
 import OrdersInCart from "./componenets/Orders/ordersIncart";
-import MainTransactionControl from "./componenets/Transactions/MainTransactionControl";
+
 import TransactionControlView from "./componenets/Transactions/transactioncontrol";
 import VerificationView from "./componenets/Transactions/transaction-verification";
 import BankAccountView from "./componenets/Transactions/BankAccountview";
@@ -40,6 +45,11 @@ import InventoryControlCheckDiscount from "./componenets/Discounts/Inventorycont
 import ReferralDashboard from "./componenets/Refferal/referralDashboard";
 import ReferralDetail from "./componenets/Refferal/referralDetail";
 import ReferralProfit from "./componenets/Refferal/referralProfits";
+import ScooterDelivery from "./componenets/Order-management/ScooterDelivery";
+import SalesData from "./componenets/Sales/salesdata";
+import CalendarComponent from "./componenets/Settings/Calendar";
+import CustomerPage from "./componenets/Customers/viewCustomers";
+import CustomerDetail from "./componenets/Customers/customerDetails";
 
 function App() {
   return (
@@ -111,14 +121,13 @@ function App() {
             </>
           }
         />
+        <Route path="/" element={<Navigate to="/transactions" replace />} />
         <Route
           path="/Transactions-control"
-          element={
-            <>
-              <MainTransactionControl />
-            </>
-          }
+          element={<TransactionControlView />}
         />
+        <Route path="/verification/:orderId" element={<VerificationView />} />
+        <Route path="/bank-view/:orderId" element={<BankAccountView />} />
         <Route
           path="/order-details"
           element={
@@ -280,6 +289,40 @@ function App() {
             </>
           }
         />
+        <Route
+          path="/scooter-delivery"
+          element={
+            <>
+              <ScooterDelivery />
+            </>
+          }
+        />
+        <Route
+          path="/sales-data"
+          element={
+            <>
+              <SalesData />
+            </>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <>
+              <CalendarComponent />
+            </>
+          }
+        />
+        <Route
+          path="/customers"
+          element={
+            <>
+              <CustomerPage />
+            </>
+          }
+        />
+        {/* detail view for a given customer ID */}
+        <Route path="/customers/:id" element={<CustomerDetail />} />
 
         <Route
           path="admin/supplier/edit"

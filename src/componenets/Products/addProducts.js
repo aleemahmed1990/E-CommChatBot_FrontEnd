@@ -38,12 +38,17 @@ const AddProduct = () => {
     description: "",
     varianceName: "",
     subtitleDescription: "",
-    heightCm: "",
-    widthCm: "",
-    depthCm: "",
-    weightKg: "",
+
     specifications: [
-      { height: "", length: "", width: "", depth: "", colours: "", id: 0 },
+      {
+        height: "",
+        length: "",
+        width: "",
+        depth: "",
+        colours: "",
+        weight: "",
+        id: 0,
+      },
     ],
     stock: "",
     minimumOrder: 1,
@@ -74,7 +79,6 @@ const AddProduct = () => {
     supplierEmail: "",
     anyDiscount: "",
     priceAfterDiscount: "",
-    suggestedRetailPrice: "",
     visibility: "Public",
     tags: [],
     categories: "Stores",
@@ -97,6 +101,14 @@ const AddProduct = () => {
 
     safetyDaysStock: "", // Field to store calculated safety days stock amount
   });
+
+  const toBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (err) => reject(err);
+    });
 
   // Master images and more images state
   const [masterImages, setMasterImages] = useState([null]);
@@ -505,99 +517,49 @@ const AddProduct = () => {
   // Submit form function with improved error handling
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     setIsLoading(true);
 
     try {
-      // Create a FormData object to handle file uploads
-      const productData = new FormData();
+      // 1) Prepare payload object
+      const payload = { ...formData, productType };
 
-      // Add all form fields to the FormData
-      for (const key in formData) {
-        if (key === "specifications" || key === "tags") {
-          productData.append(key, JSON.stringify(formData[key]));
-        } else {
-          // Only append if the value is not undefined or null
-          if (formData[key] !== undefined && formData[key] !== null) {
-            productData.append(key, formData[key]);
-          }
-        }
-      }
-
-      // Add product type
-      productData.append("productType", productType);
-
-      // Add master image if it exists
+      // 2) Convert masterImage File to Base64
       if (masterImages[0]?.file) {
-        productData.append("masterImage", masterImages[0].file);
+        const dataUrl = await toBase64(masterImages[0].file);
+        const [header, base64] = dataUrl.split(",");
+        payload.masterImage = base64;
+        payload.masterImageType = header.match(/data:(.*);base64/)[1];
       }
 
-      // Add more images if they exist
-      moreImages.forEach((img, index) => {
-        if (img?.file) {
-          productData.append(`moreImage${index}`, img.file);
+      // 3) Convert moreImages if needed
+      const moreBase64 = [];
+      for (let i = 0; i < moreImages.length; i++) {
+        if (moreImages[i]?.file) {
+          const url = await toBase64(moreImages[i].file);
+          const [hdr, b64] = url.split(",");
+          moreBase64.push({
+            data: b64,
+            contentType: hdr.match(/data:(.*);base64/)[1],
+          });
         }
+      }
+      if (moreBase64.length) payload.moreImages = moreBase64;
+
+      // 4) POST JSON to server
+      const response = await axios.post(`${API_URL}/api/products`, payload, {
+        headers: { "Content-Type": "application/json" },
       });
 
-      console.log("Sending data to server...");
-
-      // Debug what's being sent
-      const formDataEntries = [...productData.entries()];
-      console.log(
-        "FormData contents:",
-        formDataEntries.map((entry) => ({
-          key: entry[0],
-          value: entry[0].includes("Image") ? "File object" : entry[1],
-        }))
-      );
-
-      // Send the data to the server
-      const response = await axios.post(
-        `${API_URL}/api/products`,
-        productData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      console.log("Server response:", response.data);
-
-      if (response.data && response.data.success) {
+      if (response.data.success) {
         handleSuccess();
       } else {
-        alert(response.data.message || "Failed to create product");
+        toast.error(response.data.message || "Failed to create product");
       }
     } catch (error) {
       console.error("Error creating product:", error);
-
-      // More detailed error logging
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error("Response data:", error.response.data);
-        console.error("Response status:", error.response.status);
-        console.error("Response headers:", error.response.headers);
-
-        alert(
-          `Server error: ${
-            error.response.data.message ||
-            error.response.statusText ||
-            "Unknown error"
-          }`
-        );
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error("Request made but no response received:", error.request);
-        alert("No response from server. Please check your network connection.");
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error("Error setting up request:", error.message);
-        alert(`Error: ${error.message}`);
-      }
+      toast.error("An error occurred. See console.");
     } finally {
       setIsLoading(false);
     }
@@ -1115,118 +1077,85 @@ const AddProduct = () => {
                             Specifications
                           </h3>
                           <div className="border border-gray-300 rounded-lg">
-                            <div className="grid grid-cols-5 p-2 bg-gray-100 text-xs font-medium">
+                            {/* Header row */}
+                            <div className="grid grid-cols-5 gap-2 p-2 bg-gray-100 text-xs font-medium">
                               <div>Height</div>
                               <div>Length</div>
                               <div>Width</div>
-                              <div>
-                                Unit{" "}
-                                <p className="text-lg font-medium  ml-16">
-                                  or{" "}
-                                </p>
-                              </div>
-
-                              <div>Kg</div>
+                              <div>Weight (kg/unit)</div>
+                              <div>Colour</div>
                             </div>
 
-                            {formData.specifications.map((spec, index) => (
+                            {/* Data rows */}
+                            {formData.specifications.map((spec, i) => (
                               <div
-                                key={`spec-${index}`}
-                                className="grid grid-cols-5 p-2 border-t border-gray-300 text-xs"
+                                key={spec.id}
+                                className="grid grid-cols-5 gap-2 p-2 border-t border-gray-300 text-xs"
                               >
-                                {/* Height */}
                                 <input
                                   type="text"
+                                  placeholder="Height"
                                   value={spec.height}
                                   onChange={(e) =>
                                     handleSpecChange(
-                                      index,
+                                      i,
                                       "height",
                                       e.target.value
                                     )
                                   }
                                   className="border border-gray-300 p-1 rounded"
                                 />
-
-                                {/* Length */}
                                 <input
                                   type="text"
+                                  placeholder="Length"
                                   value={spec.length}
                                   onChange={(e) =>
                                     handleSpecChange(
-                                      index,
+                                      i,
                                       "length",
                                       e.target.value
                                     )
                                   }
                                   className="border border-gray-300 p-1 rounded"
                                 />
-
-                                {/* Depth (was incorrectly bound to length before) */}
                                 <input
                                   type="text"
-                                  value={spec.depth}
-                                  onChange={(e) =>
-                                    handleSpecChange(
-                                      index,
-                                      "depth",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="border border-gray-300 p-1 rounded"
-                                />
-
-                                {/* Width */}
-                                <input
-                                  type="text"
+                                  placeholder="Width"
                                   value={spec.width}
                                   onChange={(e) =>
+                                    handleSpecChange(i, "width", e.target.value)
+                                  }
+                                  className="border border-gray-300 p-1 rounded"
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Weight"
+                                  value={spec.weight}
+                                  onChange={(e) =>
                                     handleSpecChange(
-                                      index,
-                                      "width",
+                                      i,
+                                      "weight",
                                       e.target.value
                                     )
                                   }
                                   className="border border-gray-300 p-1 rounded"
                                 />
-
-                                {/* “or” placeholder */}
-                                <div className="flex items-center">
-                                  <input
-                                    type="text"
-                                    placeholder="or"
-                                    className="w-full border border-gray-300 p-1 rounded"
-                                  />
-                                </div>
-
-                                {/* Colour */}
-                                <div className="flex items-center">
-                                  <p className="font-medium mr-3">Colour</p>
-                                  <input
-                                    type="text"
-                                    value={spec.colours}
-                                    onChange={(e) =>
-                                      handleSpecChange(
-                                        index,
-                                        "colours",
-                                        e.target.value
-                                      )
-                                    }
-                                    className="w-3/4 border border-gray-300 p-1 rounded"
-                                  />
-
-                                  {index > 0 && (
-                                    <button
-                                      type="button"
-                                      onClick={() => removeSpecification(index)}
-                                      className="ml-1 text-red-500"
-                                    >
-                                      <XCircleIcon size={16} />
-                                    </button>
-                                  )}
-                                </div>
+                                <input
+                                  type="text"
+                                  placeholder="Colour"
+                                  value={spec.colours}
+                                  onChange={(e) =>
+                                    handleSpecChange(
+                                      i,
+                                      "colours",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="border border-gray-300 p-1 rounded"
+                                />
                               </div>
                             ))}
+
                             <div className="p-2 border-t border-gray-300">
                               <button
                                 type="button"
