@@ -30,9 +30,7 @@ const AllEmployees = () => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          "https://ultra-inquisitive-oatmeal.glitch.me/api/employees"
-        );
+        const response = await axios.get("http://localhost:5000/api/employees");
         setEmployees(response.data.data);
         setTotalItems(response.data.count);
         setLoading(false);
@@ -206,20 +204,22 @@ const AllEmployees = () => {
                       <th className="pb-3 pl-2 pr-4">ID</th>
                       <th className="pb-3 px-4">NAME</th>
                       <th className="pb-3 px-4">Date Added</th>
-                      <th className="pb-3 px-4">ROLES</th>
+                      <th className="pb-3 px-4"> Employee Category</th>{" "}
+                      {/* New Column */}
+                      <th className="pb-3 px-4">Permissions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan="4" className="py-4 text-center">
+                        <td colSpan="5" className="py-4 text-center">
                           Loading employees...
                         </td>
                       </tr>
                     ) : error ? (
                       <tr>
                         <td
-                          colSpan="4"
+                          colSpan="5"
                           className="py-4 text-center text-red-500"
                         >
                           {error}
@@ -227,7 +227,7 @@ const AllEmployees = () => {
                       </tr>
                     ) : currentItems.length === 0 ? (
                       <tr>
-                        <td colSpan="4" className="py-4 text-center">
+                        <td colSpan="5" className="py-4 text-center">
                           No employees found
                         </td>
                       </tr>
@@ -245,6 +245,10 @@ const AllEmployees = () => {
                           </td>
                           <td className="py-4 px-4 text-gray-800">
                             {formatDate(employee.updatedAt) || "6 April, 2023"}
+                          </td>
+                          <td className="py-4 px-4 text-gray-800">
+                            {employee.employeeCategory || "Not specified"}{" "}
+                            {/* Display Employee Category */}
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex flex-wrap gap-2">

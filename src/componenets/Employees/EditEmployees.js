@@ -96,15 +96,14 @@ const EditEmployees = () => {
   ];
 
   // Base API URL for the local server
-  const API_BASE_URL = "https://ultra-inquisitive-oatmeal.glitch.me/";
+  const API_BASE_URL = "http://localhost:5000";
 
-  // Fetch employees data from the API
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
         const response = await axios.get(`${API_BASE_URL}/api/employees`);
-        setEmployees(response.data.data);
+        setEmployees(response.data.data); // Ensure this contains employeeCategory
         setTotalItems(response.data.count);
         setLoading(false);
       } catch (error) {
@@ -113,7 +112,6 @@ const EditEmployees = () => {
         setLoading(false);
       }
     };
-
     fetchEmployees();
   }, []);
 
@@ -221,6 +219,7 @@ const EditEmployees = () => {
       address: employee.address || "",
       emergencyContact: employee.emergencyContact || "",
       homeLocation: employee.homeLocation || "",
+      employeeCategory: "",
       roles: employee.roles || [],
       addedOn: employee.addedOn
         ? new Date(employee.addedOn).toISOString().slice(0, 10)
@@ -396,7 +395,6 @@ const EditEmployees = () => {
     return true;
   };
 
-  // Submit edited employee data
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     setValidationError("");
@@ -637,6 +635,7 @@ const EditEmployees = () => {
                       <th className="pb-3 px-4">NAME</th>
                       <th className="pb-3 px-4">Date Added</th>
                       <th className="pb-3 px-4">Last Edited</th>
+                      <th className="pb-3 px-4">Employee Category</th>
                       <th className="pb-3 px-4">PERMISSIONS</th>
                       <th className="pb-3 px-4">ACTIONS</th>
                     </tr>
@@ -681,6 +680,11 @@ const EditEmployees = () => {
                           <td className="py-4 px-4 text-gray-800">
                             {formatDate(employee.updatedAt) || "-"}
                           </td>
+                          <td className="py-4 px-4 text-gray-800">
+                            {employee.employeeCategory ||
+                              "No category assigned"}
+                          </td>
+
                           <td className="py-4 px-4">
                             <div className="flex flex-wrap gap-2">
                               {employee.roles && employee.roles.length > 0 ? (
@@ -1073,6 +1077,25 @@ const EditEmployees = () => {
                     </div>
                   ))}
                 </div>
+
+                <td className="py-4 px-4">
+                  <div className="flex justify-between items-center">
+                    {/* Employee Category as a heading */}
+                    <div className="font-semibold">Employee Category</div>
+                    <div>
+                      <select
+                        name="employeeCategory"
+                        value={editFormData.employeeCategory || ""}
+                        onChange={handleInputChange}
+                        className="w-48 p-2 border border-gray-300 rounded"
+                      >
+                        <option value="">Select Category</option>
+                        <option value="Driver">Driver</option>
+                        <option value="Order Manager">Order Manager</option>
+                      </select>
+                    </div>
+                  </div>
+                </td>
 
                 <div className="border-t border-b py-6 my-6">
                   <label className="block text-sm font-medium text-gray-700 mb-3">

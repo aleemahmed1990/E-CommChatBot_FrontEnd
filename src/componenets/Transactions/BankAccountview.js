@@ -23,6 +23,47 @@ export default function BankAccountView() {
       .catch(console.error);
   }, [orderId]);
 
+  const handleSave = () => {
+    alert("The receipt is marked as correct");
+    navigate("/verification/ORD10028");
+  };
+
+  const getImageSource = () => {
+    if (!order || !order.receiptImage) return null;
+
+    const receipt = order.receiptImage;
+
+    if (typeof receipt === "string") return receipt;
+
+    if (receipt.data) {
+      if (typeof receipt.data === "string") {
+        if (receipt.data.startsWith("data:")) return receipt.data;
+        const contentType = receipt.contentType || "image/jpeg";
+        return `data:${contentType};base64,${receipt.data}`;
+      }
+
+      if (Array.isArray(receipt.data)) {
+        try {
+          const contentType = receipt.contentType || "image/jpeg";
+          const base64String = btoa(
+            receipt.data.map((byte) => String.fromCharCode(byte)).join("")
+          );
+          return `data:${contentType};base64,${base64String}`;
+        } catch (err) {
+          console.error("Error converting image data:", err);
+          return null;
+        }
+      }
+    }
+
+    if (typeof receipt.data === "string" && receipt.data.startsWith("data:")) {
+      return receipt.data;
+    }
+
+    console.error("Unsupported receiptImage format:", receipt);
+    return null;
+  };
+
   if (!order) return <div className="p-6">Loading…</div>;
 
   const receivedAt = new Date(order.orderDate).toLocaleTimeString([], {
@@ -31,15 +72,7 @@ export default function BankAccountView() {
   });
   const receivedDate = new Date(order.orderDate).toLocaleDateString();
 
-  const handleSave = () => {
-    // PUT back to your API if desired
-    console.log({
-      textBox,
-      allocatedToOrder,
-      allocatedEmpName,
-      allocatedStatus,
-    });
-  };
+  const imageSource = getImageSource();
 
   return (
     <div className="flex">
@@ -156,7 +189,7 @@ export default function BankAccountView() {
             </div>
             <button
               onClick={handleSave}
-              className="mt-4 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded"
+              className="mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
             >
               Correct Receipt
             </button>
@@ -166,9 +199,9 @@ export default function BankAccountView() {
           <div className="w-full md:w-64 bg-white rounded-md p-6 flex flex-col items-center">
             <h2 className="mb-4 font-semibold">Receipt photo</h2>
             <div className="w-full h-48 bg-gray-100 flex items-center justify-center mb-4">
-              {order.receiptImage ? (
+              {imageSource ? (
                 <img
-                  src={order.receiptImage}
+                  src={imageSource}
                   alt="receipt"
                   className="object-contain h-full"
                 />

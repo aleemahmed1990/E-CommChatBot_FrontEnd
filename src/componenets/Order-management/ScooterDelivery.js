@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../Sidebar/sidebar";
 import {
@@ -12,21 +12,21 @@ import {
   Truck,
   Bike,
 } from "lucide-react";
+import axios from "axios";
 
 export default function ScooterDelivery() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
   const [activeTimeSlotOrder, setActiveTimeSlotOrder] = useState(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
+  const [orders, setOrders] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [selectedArea, setSelectedArea] = useState("North Bali");
+  const [selectedDriver1, setSelectedDriver1] = useState("");
+  const [selectedDriver2, setSelectedDriver2] = useState("");
+  const [selectedPickupType, setSelectedPickupType] = useState("three-wheeler");
 
-  // Dummy data
-  const drivers = [
-    { id: 1, name: "John Smith" },
-    { id: 2, name: "Sarah Johnson" },
-    { id: 3, name: "Mike Wilson" },
-    { id: 4, name: "Emma Davis" },
-    { id: 5, name: "Robert Taylor" },
-  ];
+  // Hardcoded data for area and pickup type
   const areas = [
     "North Bali",
     "South Bali",
@@ -34,124 +34,93 @@ export default function ScooterDelivery() {
     "West Bali",
     "Central Bali",
   ];
-  const pickupTypes = ["Standard", "Express", "Same-day", "Scheduled"];
-  const orders = [
-    {
-      id: "12A",
-      customer: "Frank Smith",
-      address: "A-656, Street Abcd",
-      amount: "$123",
-      items: [
-        { name: "Lucky Cement", quantity: "2 bags" },
-        { name: "Golden Screws", quantity: "1 bag" },
-      ],
-      deliveryTime: "Jan 31, 2025 9:00 AM",
-      allocationStatus: "",
-      requestedTime: "morning 6-9 am",
-    },
-    {
-      id: "12A",
-      customer: "Frank Smith",
-      address: "A-656, Street Abcd",
-      amount: "$123",
-      items: [
-        { name: "Lucky Cement", quantity: "2 bags" },
-        { name: "Golden Screws", quantity: "1 bag" },
-      ],
-      deliveryTime: "Jan 31, 2025 10:00 AM",
-      allocationStatus: "Lucky Cement, Golden Screws",
-      requestedTime: "morning 6-9 am",
-    },
-    {
-      id: "12A",
-      customer: "Frank Smith",
-      address: "A-656, Street Abcd",
-      amount: "$123",
-      items: [
-        { name: "Lucky Cement", quantity: "2 bags" },
-        { name: "Golden Screws", quantity: "1 bag" },
-      ],
-      deliveryTime: "Jan 31, 2025 11:00 AM",
-      allocationStatus: "",
-      requestedTime: "morning 6-9 am",
-    },
-  ];
 
-  // Form state
-  const [selectedArea, setSelectedArea] = useState("North Bali");
-  const [selectedDriver1, setSelectedDriver1] = useState("");
-  const [selectedDriver2, setSelectedDriver2] = useState("");
-  const [selectedPickupType, setSelectedPickupType] = useState("");
+  // Fetch orders and drivers from the backend
+  useEffect(() => {
+    const fetchOrders = async () => {
+      const { data } = await axios.get("http://localhost:5000/api/orders", {
+        params: {
+          status: "order-confirmed",
+          deliveryType: "scooter", // Only fetch orders with scooter delivery type
+        },
+      });
+      setOrders(data.orders);
+    };
 
-  // Truck orders state
-  const [truckOrders, setTruckOrders] = useState({
-    "6am-9am": [
-      {
-        id: "1234",
-        items: [
-          { name: "Lucky Cement", quantity: "1 kg", onTruck: false },
-          { name: "Golden screws", quantity: "1 bag", onTruck: true },
-        ],
-        status: "Fully allocated",
-        truckOnDeliver: false,
-      },
-    ],
-    "930am-1pm": [
-      {
-        id: "1234",
-        items: [
-          { name: "Lucky Cement", quantity: "1 kg", onTruck: false },
-          { name: "Golden screws", quantity: "1 bag", onTruck: false },
-        ],
-        status: "Fully allocated",
-        truckOnDeliver: false,
-      },
-    ],
-  });
+    const fetchDrivers = async () => {
+      const { data } = await axios.get("http://localhost:5000/api/employees", {
+        params: { employeeCategory: "Driver" },
+      });
+      setDrivers(data.data);
+    };
 
-  // Navigation handlers
+    fetchOrders();
+    fetchDrivers();
+  }, []);
+
   const handleViewOrderDetails = (orderId) => {
     navigate("/order-details");
   };
-  const handleManagedelivery = () => {
-    navigate("/delivery-orders");
-  };
+
   const handleManagePickup = () => {
     navigate("/pickup-orders");
+  };
+  const handleManagedelivery = () => {
+    navigate("/delivery-orders");
   };
   const handleManageScooterDelivery = () => {
     navigate("/scooter-delivery");
   };
 
-  // Time-slot allocation
-  const handleToggleTimeSlotSelection = (orderId) =>
-    setActiveTimeSlotOrder(activeTimeSlotOrder === orderId ? null : orderId);
-  const handleSelectTimeSlot = (timeSlot) => setSelectedTimeSlot(timeSlot);
-  const handleDoneTimeSlot = () => {
-    console.log(
-      `Order ${activeTimeSlotOrder} allocated to ${selectedTimeSlot}`
+  const handleToggleTimeSlotSelection = (orderId) => {
+    if (activeTimeSlotOrder === orderId) {
+      setActiveTimeSlotOrder(null);
+    } else {
+      setActiveTimeSlotOrder(orderId);
+    }
+  };
+
+  const handleSelectTimeSlot = (timeSlot) => {
+    setSelectedTimeSlot(timeSlot);
+  };
+
+  const handleDoneTimeSlot = async () => {
+    // Update the order with selected time slot and status
+    await axios.put(
+      `http://localhost:5000/api/orders/${activeTimeSlotOrder}/status`,
+      {
+        status: "allocated-driver",
+        timeSlot: selectedTimeSlot,
+        driver1: selectedDriver1,
+        driver2: selectedDriver2,
+        pickupType: selectedPickupType,
+        truckOnDeliver: false, // Set truck on delivery to false initially
+      }
     );
+
+    // Remove the order from the table and add it to the respective timeslot
+    setOrders(orders.filter((order) => order.id !== activeTimeSlotOrder));
     setActiveTimeSlotOrder(null);
   };
 
-  // Truck checkboxes
-  const toggleProductOnTruck = (slotKey, orderIndex, itemIndex) => {
-    const updated = { ...truckOrders };
-    updated[slotKey][orderIndex].items[itemIndex].onTruck =
-      !updated[slotKey][orderIndex].items[itemIndex].onTruck;
-    setTruckOrders(updated);
-  };
-  const toggleTruckOnDeliver = (slotKey, orderIndex) => {
-    const updated = { ...truckOrders };
-    updated[slotKey][orderIndex].truckOnDeliver =
-      !updated[slotKey][orderIndex].truckOnDeliver;
-    setTruckOrders(updated);
+  const toggleTruckOnDeliver = async (orderId) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (order) {
+      const updatedOrder = { ...order, truckOnDeliver: !order.truckOnDeliver };
+      await axios.put(`http://localhost:5000/api/orders/${orderId}/status`, {
+        status: "allocated-driver",
+        truckOnDeliver: updatedOrder.truckOnDeliver,
+      });
+      setOrders(orders.map((o) => (o.id === orderId ? updatedOrder : o)));
+    }
   };
 
-  // Modal for choosing a time slot
+  // Modal overlay for time slot selection
   const TimeSlotModal = () => {
     if (!activeTimeSlotOrder) return null;
+
     const order = orders.find((o) => o.id === activeTimeSlotOrder) || {};
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-md p-6 w-96 max-w-full">
@@ -273,24 +242,25 @@ export default function ScooterDelivery() {
                   label: "Pickup Type",
                   value: selectedPickupType,
                   onChange: setSelectedPickupType,
-                  options: pickupTypes,
-                  placeholder: "Select type",
+                  options: [
+                    "Three-wheeler",
+                    "Scooter heavy delivery",
+                    "Scooter",
+                  ],
                 },
                 {
                   label: "Driver 1",
                   value: selectedDriver1,
                   onChange: setSelectedDriver1,
                   options: drivers.map((d) => ({ label: d.name, value: d.id })),
-                  placeholder: "Select driver",
                 },
                 {
                   label: "Driver 2",
                   value: selectedDriver2,
                   onChange: setSelectedDriver2,
                   options: drivers.map((d) => ({ label: d.name, value: d.id })),
-                  placeholder: "Select driver",
                 },
-              ].map(({ label, value, onChange, options, placeholder }) => (
+              ].map(({ label, value, onChange, options }) => (
                 <div key={label}>
                   <label className="block text-sm font-medium mb-1">
                     {label}
@@ -301,18 +271,11 @@ export default function ScooterDelivery() {
                       value={value}
                       onChange={(e) => onChange(e.target.value)}
                     >
-                      {placeholder && <option value="">{placeholder}</option>}
-                      {options.map((opt) =>
-                        typeof opt === "string" ? (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ) : (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        )
-                      )}
+                      {options.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
                     </select>
                     <ChevronDown className="absolute right-2 top-3 w-4 h-4 text-gray-500" />
                   </div>
@@ -320,171 +283,43 @@ export default function ScooterDelivery() {
               ))}
             </div>
 
-            {/* Truck orders */}
+            {/* Orders Table */}
             <div className="mb-8 space-y-6">
-              {Object.entries(truckOrders).map(([slot, ordersInSlot]) => (
-                <div key={slot}>
-                  <div className="bg-gray-300 p-2 rounded-t-md">
-                    <h3 className="font-medium uppercase">{slot}</h3>
-                  </div>
-                  <div className="border rounded-b-md">
-                    <div className="p-2 border-b text-sm text-gray-600 flex items-center gap-1">
-                      <Package className="w-4 h-4" />
-                      <span>Orders on truck</span>
-                      <span className="text-xs text-gray-500 ml-1">
-                        (allocated appear here)
-                      </span>
-                    </div>
-                    {ordersInSlot.map((order, idx) => (
-                      <div
-                        key={idx}
-                        className="p-2 border-b last:border-0 bg-white"
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium">Order {order.id}</span>
-                          <span className="text-xs text-gray-500">
-                            {order.status}
-                          </span>
-                        </div>
-                        {order.items.map((item, i) => (
-                          <div
-                            key={i}
-                            className="flex justify-between items-center py-2"
-                          >
-                            <div className="flex items-center gap-3">
-                              <Package className="w-6 h-6 text-gray-700" />
-                              <div>
-                                <div className="font-medium">{item.name}</div>
-                                <div className="text-sm text-gray-500">
-                                  Qty: {item.quantity}
-                                </div>
-                              </div>
-                            </div>
-                            <label className="flex items-center gap-1">
-                              <input
-                                type="checkbox"
-                                className="h-4 w-4"
-                                checked={item.onTruck}
-                                onChange={() =>
-                                  toggleProductOnTruck(slot, idx, i)
-                                }
-                              />
-                              <span className="text-sm">products on truck</span>
-                            </label>
-                          </div>
-                        ))}
-                        <div className="mt-4 pt-2 border-t border-gray-300 flex justify-end">
-                          <label className="flex items-center gap-1">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4"
-                              checked={order.truckOnDeliver}
-                              onChange={() => toggleTruckOnDeliver(slot, idx)}
-                            />
-                            <span className="text-sm">Truck on Delivery</span>
-                          </label>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              {orders.length === 0 ? (
+                <div className="text-center p-4 text-gray-500">
+                  No orders available right now.
                 </div>
-              ))}
-            </div>
-
-            {/* Orders table */}
-            <div>
-              <p className="mb-2 text-sm text-gray-600">
-                Showing all orders of {selectedArea.toLowerCase()}
-              </p>
-              <div className="border rounded-md overflow-x-auto bg-white">
-                <table className="min-w-full">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="p-3 w-12"></th>
-                      <th className="p-3 text-left">Delivery Time</th>
-                      <th className="p-3 text-left">Tr ID</th>
-                      <th className="p-3 text-left">Customer</th>
-                      <th className="p-3 text-left">Address</th>
-                      <th className="p-3 text-left">Amount</th>
-                      <th className="p-3 text-left">Items</th>
-                      <th className="p-3 text-left">Allocation</th>
-                      <th className="p-3 text-left">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map((order, i) => (
-                      <tr
-                        key={i}
-                        className={
-                          i === 0
-                            ? "bg-green-50"
-                            : i === 1
-                            ? "bg-yellow-50"
-                            : "bg-white"
-                        }
-                      >
-                        <td className="p-3 border-r">
-                          <button
-                            className="text-gray-500"
-                            onClick={() =>
-                              handleToggleTimeSlotSelection(order.id)
-                            }
-                          >
-                            <MoreVertical className="w-5 h-5" />
-                          </button>
-                        </td>
-                        <td className="p-3 border-r">{order.deliveryTime}</td>
-                        <td className="p-3 border-r">{order.id}</td>
-                        <td className="p-3 border-r">{order.customer}</td>
-                        <td className="p-3 border-r">{order.address}</td>
-                        <td className="p-3 border-r">{order.amount}</td>
-                        <td className="p-3 border-r">
-                          {order.items.map((itm, ix) => (
-                            <div key={ix}>
-                              {itm.name}{" "}
-                              <span className="text-gray-500">
-                                {itm.quantity}
-                              </span>
-                            </div>
-                          ))}
-                        </td>
-                        <td className="p-3 border-r">
-                          {order.allocationStatus}
-                        </td>
-                        <td className="p-3">
-                          <div className="flex flex-col gap-1">
-                            <button
-                              className="text-indigo-600 text-sm"
-                              onClick={() => handleViewOrderDetails(order.id)}
-                            >
-                              View Details
-                            </button>
-                            <button
-                              className="text-indigo-600 text-sm"
-                              onClick={() => handleViewOrderDetails(order.id)}
-                            >
-                              Allocate
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex justify-center items-center mt-6 gap-4">
-                <ArrowLeft className="w-5 h-5 text-red-500" />
-                <hr className="w-32 border-t-2 border-red-500" />
-              </div>
-              <p className="text-center mt-2 text-sm text-gray-600">
-                allocate all or partial allocation
-              </p>
+              ) : (
+                orders.map((order) => (
+                  <div key={order.id}>
+                    <div className="p-2 border-b last:border-0">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium">Order {order.id}</span>
+                        <span className="text-xs text-gray-500">
+                          {order.status}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span>{order.customer}</span>
+                        <button
+                          className="text-indigo-600 text-sm"
+                          onClick={() =>
+                            handleToggleTimeSlotSelection(order.id)
+                          }
+                        >
+                          Allocate
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </main>
         </div>
       </div>
 
+      {/* Time slot selection modal */}
       <TimeSlotModal />
     </div>
   );

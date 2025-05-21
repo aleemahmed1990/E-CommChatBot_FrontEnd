@@ -4,7 +4,7 @@ import { ChevronDown, Upload, PlusCircle, X, AlertCircle } from "lucide-react";
 import Sidebar from "../Sidebar/sidebar";
 
 // Base URL for API requests
-const API_BASE_URL = "https://ultra-inquisitive-oatmeal.glitch.me";
+const API_BASE_URL = "http://localhost:5000";
 
 const AddEmployee = ({ employeeId }) => {
   const [formData, setFormData] = useState({
@@ -15,6 +15,7 @@ const AddEmployee = ({ employeeId }) => {
     emergencyContact: "",
     homeLocation: "",
     addedOn: new Date().toISOString().slice(0, 10),
+    employeeCategory: "",
     roles: [],
   });
 
@@ -254,11 +255,25 @@ const AddEmployee = ({ employeeId }) => {
     return true;
   };
 
+  const validateContacts = () => {
+    for (const contact of contacts) {
+      if (!contact.name || !contact.relation) {
+        setValidationError("Contact name and relation are required.");
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
     setValidationError("");
 
+    // Validate contacts before proceeding
+    if (!validateContacts()) {
+      return; // Stop submission if validation fails
+    }
     // Validate identification documents
     if (!validateIdentification()) {
       // Scroll to the validation error
@@ -725,6 +740,23 @@ const AddEmployee = ({ employeeId }) => {
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Employee Category
+              </label>
+              <select
+                name="employeeCategory"
+                value={formData.employeeCategory}
+                onChange={handleInputChange}
+                className="w-full p-2 border border-gray-300 rounded"
+                required
+              >
+                <option value="">Select Category</option>
+                <option value="Driver">Driver</option>
+                <option value="Order Manager">Order Manager</option>
+              </select>
             </div>
 
             <div className="mb-6">
