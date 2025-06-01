@@ -54,11 +54,11 @@ const AddProduct = () => {
     minimumOrder: 1,
     highestValue: "",
     normalShelvesCount: "",
-    stockAmount: "",
+    AmountStockmintoReorder: "",
     safetyDays: "",
     safetyDaysStock: "",
     // reorder flags:
-    useStockAmount: false,
+    useAmountStockmintoReorder: false,
     useSafetyDays: false,
     noReorder: false,
     // yellow fields now readOnly No info:
@@ -78,7 +78,8 @@ const AddProduct = () => {
     supplierAddress: "",
     supplierEmail: "",
     anyDiscount: "",
-    priceAfterDiscount: "",
+    NormalPrice: "",
+    Stock: "",
     visibility: "Public",
     tags: [],
     categories: "Stores",
@@ -87,7 +88,7 @@ const AddProduct = () => {
     globalTradeItemNumber: "",
     k3lNumber: "",
     sniNumber: "", // Add this new field
-    stockAmount: "", // New field
+    AmountStockmintoReorder: "", // New field
 
     safetyDays: "", // New field
 
@@ -99,7 +100,7 @@ const AddProduct = () => {
 
     subCategories: "", // New field
 
-    safetyDaysStock: "", // Field to store calculated safety days stock amount
+    // Field to store calculated safety days stock amount
   });
 
   const toBase64 = (file) =>
@@ -143,7 +144,7 @@ const AddProduct = () => {
   const handleReorderMode = (mode) => {
     setFormData((fd) => ({
       ...fd,
-      useStockAmount: mode === "stock",
+      useAmountStockmintoReorder: mode === "stock",
       useSafetyDays: mode === "safety",
     }));
   };
@@ -379,7 +380,7 @@ const AddProduct = () => {
       supplierName: supplier.name,
       supplierEmail: supplier.email || "",
       supplierAddress: supplier.address || "",
-      supplierContact: supplier.contact || "",
+      supplierContact: supplier.phone || "",
       supplierWebsite: supplier.website || "",
     }));
     setShowSuggestions(false);
@@ -390,20 +391,6 @@ const AddProduct = () => {
 
     // Create updated form data
     const updatedFormData = { ...formData, [name]: value };
-
-    // Calculate safety days stock if relevant fields change
-    if (name === "stockAmount" || name === "safetyDays") {
-      // Simple calculation - multiply safety days by stock amount
-      // This formula can be adjusted based on your specific business logic
-      if (updatedFormData.stockAmount && updatedFormData.safetyDays) {
-        const amount = parseFloat(updatedFormData.stockAmount);
-        const days = parseFloat(updatedFormData.safetyDays);
-
-        if (!isNaN(amount) && !isNaN(days)) {
-          updatedFormData.safetyDaysStock = (amount * days).toFixed(2);
-        }
-      }
-    }
 
     setFormData(updatedFormData);
   };
@@ -1202,14 +1189,14 @@ const AddProduct = () => {
                           <div className="mb-4 flex items-center">
                             <input
                               type="checkbox"
-                              name="useStockAmount"
-                              checked={formData.useStockAmount}
+                              name="useAmountStockmintoReorder"
+                              checked={formData.useAmountStockmintoReorder}
                               onChange={() => handleReorderMode("stock")}
                               className="mr-2"
                             />
                             <input
                               type="text"
-                              name="stockAmount"
+                              name="AmountStockmintoReorder"
                               onChange={handleChange}
                               className="w-14 bg-white border border-black border-solid p-1 rounded text-sm mb-2"
                             />
@@ -1227,17 +1214,16 @@ const AddProduct = () => {
                           <div className="mb-4">
                             <div className="flex items-center mb-2">
                               <input
-                                type="checkbox"
-                                name="useSafetyDays"
-                                checked={formData.useSafetyDays}
-                                onChange={() => handleReorderMode("safety")}
-                                className="mr-2"
-                              />
-                              <input
                                 type="text"
-                                name="safetyDays"
-                                onChange={handleChange}
-                                className="w-14 bg-white border border-black border-solid p-1 rounded text-xs"
+                                name="safetyDaysStock"
+                                value={formData.safetyDaysStock}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    safetyDaysStock: e.target.value,
+                                  }))
+                                }
+                                className="w-14 ml-6 bg-white border border-black border-solid p-1 rounded text-sm mb-2"
                               />
                             </div>
                             <input
@@ -1248,8 +1234,8 @@ const AddProduct = () => {
                               className="w-14 bg-yellow-100 border p-1 rounded text-xs mb-2 ml-6"
                             />
                             <p className="text-xs ml-6">
-                              Number of amount of stock that safety days
-                              represent
+                              safety stock in # of days that we wish to have as
+                              safety stock
                             </p>
                           </div>
 
@@ -1266,49 +1252,8 @@ const AddProduct = () => {
                                 className="w-14 bg-yellow-100 border border-yellow-100 p-1 rounded text-xs mb-2"
                               />
                             </p>
-
-                            <p className="text-xs mb-2 px-1">
-                              order time in days
-                            </p>
-                            <p className="text-xs mb-2 px-1">
-                              =
-                              <input
-                                type="text"
-                                name="deliveryTime"
-                                value="No info"
-                                readOnly
-                                className="w-14 bg-yellow-100 border border-yellow-100 p-1 rounded text-xs mb-2"
-                              />
-                            </p>
-
-                            <input
-                              type="text"
-                              name="deliveryTime"
-                              value="No info"
-                              readOnly
-                              className="w-14 bg-yellow-100 ml-3 border border-yellow-100 p-1 rounded text-xs mb-2"
-                            />
-                            <p className="text-xs mb-2 px-1">
-                              Time to make order in amount of number of product
-                              in stock
-                            </p>
                           </div>
                         </div>
-
-                        {/* immediately after your Inventory section JSX */}
-                        {formData.useStockAmount &&
-                          +formData.stock <= +formData.stockAmount && (
-                            <p className="text-red-600 font-bold">
-                              ⚠️ Reorder required: stock has fallen to{" "}
-                              {formData.stock}
-                            </p>
-                          )}
-                        {formData.useSafetyDays &&
-                          +formData.safetyDaysStock <= +formData.stock && (
-                            <p className="text-red-600 font-bold">
-                              ⚠️ Reorder required by safety days threshold
-                            </p>
-                          )}
 
                         {/* System Calculation */}
                         <div className="mb-4">
@@ -1371,34 +1316,30 @@ const AddProduct = () => {
                           </div>
                         </div>
 
-                        {/* Any Discount */}
+                        {/* Price after discount */}
                         <div className="mb-4">
-                          <div className="flex justify-between">
-                            <h3 className="text-xs font-medium mb-1">
-                              Any Discount
-                            </h3>
-                            <span className="text-xs text-red-500">
-                              not applicable right now
-                            </span>
-                          </div>
+                          <h3 className="text-xs font-medium mb-1">
+                            Normal Price without any discounts
+                          </h3>
                           <input
                             type="text"
-                            name="anyDiscount"
-                            value={formData.anyDiscount}
+                            name="NormalPrice"
+                            value={formData.NormalPrice}
                             onChange={handleChange}
                             className="w-full border border-gray-300 p-1 rounded text-sm"
                           />
                         </div>
-
-                        {/* Price after discount */}
                         <div className="mb-4">
+                          <h3 className="text-xs font-medium mb-3 mt-5">
+                            Initial Inventory
+                          </h3>
                           <h3 className="text-xs font-medium mb-1">
-                            price after discount( any)
+                            Initial Stock
                           </h3>
                           <input
                             type="text"
-                            name="priceAfterDiscount"
-                            value={formData.priceAfterDiscount}
+                            name="Stock"
+                            value={formData.Stock}
                             onChange={handleChange}
                             className="w-full border border-gray-300 p-1 rounded text-sm"
                           />
@@ -1650,6 +1591,9 @@ const AddProduct = () => {
                       <div className="bg-orange-100 p-3 rounded mb-4 space-y-2">
                         <h3 className="text-sm font-medium">
                           re-order setting
+                        </h3>
+                        <h3 className="text-sm font-extrabold bg-red-500">
+                          THis section is not correct for the moment
                         </h3>
                         <div>
                           <p className="text-sm font-semibold">

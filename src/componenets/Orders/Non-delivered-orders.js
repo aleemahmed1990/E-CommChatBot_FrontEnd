@@ -1,39 +1,61 @@
 // src/components/NonDeliveredOrders.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Bell, Search, User as UserIcon } from "lucide-react";
+import { Home, Search } from "lucide-react";
 import Sidebar from "../Sidebar/sidebar";
+import axios from "axios";
 
 const NonDeliveredOrders = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [orders, setOrders] = useState([]);
+  const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  const orders = [
-    {
-      id: "123WA",
-      customer: "Jeny Solice",
-      amount: "$230",
-      placedOn: "Jan 31, 2025",
-      lastActivity: "Jan 28, 2025 8:00 PM",
-      status: "Customer returned the order",
-    },
-    {
-      id: "123WB",
-      customer: "Jeny Solice",
-      amount: "$230",
-      placedOn: "Jan 31, 2025",
-      lastActivity: "Jan 28, 2025 8:00 PM",
-      status: "Customer returned the order",
-    },
-    {
-      id: "123WC",
-      customer: "Jeny Solice",
-      amount: "$230",
-      placedOn: "Jan 31, 2025",
-      lastActivity: "Jan 28, 2025 8:00 PM",
-      status: "Customer returned the order",
-    },
-  ];
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/complaints");
+        const complaintsData = res.data.complaints || [];
+
+        const filteredOrders = complaintsData
+          .filter(
+            (o) =>
+              o.complaint &&
+              o.complaint.status &&
+              o.complaint.issueTypes?.length > 0
+          )
+          .map((o) => ({
+            orderId: o.orderId,
+            customer: o.customer,
+            totalAmount: o.totalAmount,
+            placedOn: new Date(o.orderDate).toLocaleDateString(),
+            lastActivity: o.complaint?.reportedAt
+              ? new Date(o.complaint.reportedAt).toLocaleString()
+              : "N/A",
+            status: o.complaint?.issueTypes[0] || "N/A",
+          }));
+
+        setOrders(filteredOrders);
+      } catch (error) {
+        console.error("Error fetching complaint orders:", error);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
+  const handleRefund = async (orderId) => {
+    try {
+      await axios.put(`http://localhost:5000/api/orders/${orderId}/status`, {
+        status: "refund",
+      });
+      setOrders((prev) => prev.filter((o) => o.orderId !== orderId));
+      setMessage("Order has been marked as refund");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      console.error("Refund error:", error);
+    }
+  };
 
   return (
     <div className="flex min-h-screen">
@@ -57,11 +79,15 @@ const NonDeliveredOrders = () => {
               6. Non delivered orders or issues BEFORE DELIVERY
             </h1>
           </div>
-          <div className="flex items-center space-x-4"></div>
         </header>
 
         {/* Body */}
         <div className="p-4">
+          {/* Message */}
+          {message && (
+            <div className="mb-4 text-green-600 font-medium">{message}</div>
+          )}
+
           {/* Search */}
           <div className="relative max-w-md mb-6">
             <input
@@ -98,12 +124,14 @@ const NonDeliveredOrders = () => {
               <tbody>
                 {orders.map((order, idx) => (
                   <tr key={idx} className="border-t border-gray-200">
-                    <td className="p-3 text-sm text-gray-700">{order.id}</td>
+                    <td className="p-3 text-sm text-gray-700">
+                      {order.orderId}
+                    </td>
                     <td className="p-3 text-sm text-gray-700">
                       {order.customer}
                     </td>
                     <td className="p-3 text-sm text-gray-700">
-                      {order.amount}
+                      ${order.totalAmount}
                     </td>
                     <td className="p-3 text-sm text-gray-700">
                       {order.placedOn}
@@ -116,13 +144,20 @@ const NonDeliveredOrders = () => {
                     </td>
                     <td className="p-3 text-sm text-gray-700 space-y-1">
                       <button
-                        onClick={() => navigate("/order-details")}
+                        onClick={() =>
+                          navigate(`/order-details/${order.orderId}`)
+                        }
                         className="text-blue-500 underline"
                       >
                         View Details
                       </button>
                       <div>Contact customer</div>
-                      <div>Refund now replace</div>
+                      <div
+                        className="text-red-600 cursor-pointer"
+                        onClick={() => handleRefund(order.orderId)}
+                      >
+                        Refund now / Replace
+                      </div>
                     </td>
                   </tr>
                 ))}

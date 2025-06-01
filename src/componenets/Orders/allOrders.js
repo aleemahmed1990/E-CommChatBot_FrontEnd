@@ -1,55 +1,29 @@
+// src/components/AllOrders.js
 import React, { useState, useEffect } from "react";
 import { Home, Filter } from "lucide-react";
+import axios from "axios";
+
 import Sidebar from "../Sidebar/sidebar";
 
+// Extended statuses including new ones from schema
 const OrderStatusFilters = [
-  { id: "cart-not-paid", label: "In the cart not paid yet", color: "#ffd166" },
-  {
-    id: "order-made-not-paid",
-    label: "Made order but did not pay yet",
-    color: "#ffb347",
-  },
-  {
-    id: "pay-not-confirmed",
-    label: "Pay for the order but not confirmed",
-    color: "#ffc38b",
-  },
-  {
-    id: "order-confirmed",
-    label: "Order confirmed (payment confirmed)",
-    color: "#a9b6fb",
-  },
-  {
-    id: "picking-order",
-    label: "Picking order from inventory",
-    color: "#b0f2c2",
-  },
+  { id: "cart-not-paid", label: "In cart (not paid)", color: "#ffd166" },
+  { id: "order-made-not-paid", label: "Order made (unpaid)", color: "#ffb347" },
+  { id: "pay-not-confirmed", label: "Paid (unconfirmed)", color: "#ffc38b" },
+  { id: "order-confirmed", label: "Order confirmed", color: "#a9b6fb" },
+  { id: "picking-order", label: "Picking from inventory", color: "#b0f2c2" },
   { id: "allocated-driver", label: "Allocated to driver", color: "#90cdf4" },
-  { id: "on-way", label: "On the way to deliver", color: "#73b5e8" },
-  { id: "driver-confirmed", label: "Driver confirmed order", color: "#f4a593" },
-  { id: "issue-driver", label: "Issue reported by driver", color: "#ffa07a" },
-  {
-    id: "issue-customer",
-    label: "Issue reported by customer",
-    color: "#ffb3a7",
-  },
+  { id: "on-way", label: "On the way", color: "#73b5e8" },
+  { id: "driver-confirmed", label: "Driver confirmed", color: "#f4a593" },
+  { id: "issue-driver", label: "Issue (driver)", color: "#ffa07a" },
+  { id: "issue-customer", label: "Issue (customer)", color: "#ffb3a7" },
+  { id: "complain-order", label: "Customer complaint", color: "#ff6b6b" },
   { id: "parcel-returned", label: "Parcel returned", color: "#ffb6ad" },
-  {
-    id: "customer-confirmed",
-    label: "Customer confirmed order",
-    color: "#c084fc",
-  },
+  { id: "customer-confirmed", label: "Customer confirmed", color: "#c084fc" },
   { id: "order-refunded", label: "Order refunded", color: "#e5e5e5" },
-  {
-    id: "order-complete",
-    label: "Order Complete successfully",
-    color: "#86efac",
-  },
-  {
-    id: "order not picked",
-    label: "Orders waiting for customer pickup",
-    color: "#c084fc",
-  },
+  { id: "refund", label: "Refund", color: "#d3d3d3" },
+  { id: "order-complete", label: "Order complete", color: "#86efac" },
+  { id: "order not picked", label: "Awaiting pickup", color: "#c084fc" },
 ];
 
 export default function AllOrders() {
@@ -63,24 +37,49 @@ export default function AllOrders() {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (selectedFilters.length) params.set("status", selectedFilters.join(","));
-    if (searchQuery) params.set("search", searchQuery);
-    params.set("page", currentPage);
-    params.set("limit", itemsPerPage);
+    const fetchOrders = async () => {
+      // build query params
+      const params = new URLSearchParams();
+      if (selectedFilters.length)
+        params.set("status", selectedFilters.join(","));
+      if (searchQuery) params.set("search", searchQuery);
+      params.set("page", currentPage);
+      params.set("limit", itemsPerPage);
 
-    (async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/orders?${params}`);
-        const payload = await res.json();
-        setOrders(Array.isArray(payload.orders) ? payload.orders : []);
-        setTotal(typeof payload.total === "number" ? payload.total : 0);
+        // fetch list of orders
+        const listRes = await axios.get(
+          `http://localhost:5000/api/orders?${params}`
+        );
+        const { orders: listOrders, total: listTotal } = listRes.data;
+
+        // enrich each order with customer name if missing
+        const enriched = await Promise.all(
+          listOrders.map(async (o) => {
+            if (!o.customer) {
+              try {
+                const detailRes = await axios.get(
+                  `http://localhost:5000/api/orders/${o.orderId}`
+                );
+                return { ...o, customer: detailRes.data.customer || "N/A" };
+              } catch (err) {
+                return { ...o, customer: "N/A" };
+              }
+            }
+            return o;
+          })
+        );
+
+        setOrders(enriched);
+        setTotal(typeof listTotal === "number" ? listTotal : 0);
       } catch (e) {
         console.error("Fetch failed", e);
         setOrders([]);
         setTotal(0);
       }
-    })();
+    };
+
+    fetchOrders();
   }, [selectedFilters, searchQuery, currentPage]);
 
   const toggleFilter = (id) => {
@@ -89,8 +88,6 @@ export default function AllOrders() {
     );
     setCurrentPage(1);
   };
-
-  if (!Array.isArray(orders)) return null;
 
   return (
     <div className="flex min-h-screen">
@@ -184,10 +181,8 @@ export default function AllOrders() {
                           )?.color,
                         }}
                       >
-                        {
-                          OrderStatusFilters.find((f) => f.id === o.status)
-                            ?.label
-                        }
+                        {OrderStatusFilters.find((f) => f.id === o.status)
+                          ?.label || o.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">

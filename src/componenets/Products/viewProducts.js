@@ -783,7 +783,7 @@ const ViewProducts = () => {
                         </label>
                         <input
                           type="text"
-                          value={selectedProduct.priceAfterDiscount || "0.00"}
+                          value={selectedProduct.NormalPrice || "0.00"}
                           readOnly
                           className="w-full border border-gray-300 p-2 rounded bg-gray-100"
                         />

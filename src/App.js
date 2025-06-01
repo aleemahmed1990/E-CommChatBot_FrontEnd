@@ -50,6 +50,7 @@ import SalesData from "./componenets/Sales/salesdata";
 import CalendarComponent from "./componenets/Settings/Calendar";
 import CustomerPage from "./componenets/Customers/viewCustomers";
 import CustomerDetail from "./componenets/Customers/customerDetails";
+import LostStockManagement from "./componenets/Inventory/Loststock";
 
 function App() {
   return (
@@ -110,6 +111,14 @@ function App() {
           element={
             <>
               <AllEmployees />
+            </>
+          }
+        />
+        <Route
+          path="/lost-stock"
+          element={
+            <>
+              <LostStockManagement />
             </>
           }
         />

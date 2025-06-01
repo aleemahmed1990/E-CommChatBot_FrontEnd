@@ -1,24 +1,42 @@
 // src/components/RefundComplain.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Bell, User as UserIcon, MoreVertical } from "lucide-react";
+import { Home, MoreVertical } from "lucide-react";
 import Sidebar from "../Sidebar/sidebar";
+import axios from "axios";
 
 const RefundComplain = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [refunds, setRefunds] = useState([]);
   const navigate = useNavigate();
 
-  const totalRequests = 100;
-  const totalAmount = "$12000";
+  useEffect(() => {
+    const fetchRefunds = async () => {
+      try {
+        // Dedicated refunds endpoint returns orders with status "refund"
+        const res = await axios.get("http://localhost:5000/api/refunds");
+        // API returns { refunds: [...] }
+        const refundOrders = res.data.refunds || [];
+        const cleaned = refundOrders.map((o) => ({
+          orderId: o.orderId,
+          customer: o.customer || "N/A",
+          phoneNumber: o.phoneNumber ? o.phoneNumber.replace(/\D/g, "") : "N/A",
+          totalAmount: o.totalAmount || 0,
+        }));
+        setRefunds(cleaned);
+      } catch (error) {
+        console.error("Error fetching refunds:", error);
+      }
+    };
+    fetchRefunds();
+  }, []);
 
-  const refunds = Array.from({ length: 6 }).map((_, i) => ({
-    orderId: "123#",
-    customer: "Joseph Grey",
-    contact: "0313-2456789",
-    amount: "$230",
-    id: i,
-  }));
+  const totalRequests = refunds.length; // count of refund requests
+  const totalAmount = `$${refunds.reduce(
+    (sum, r) => sum + (r.totalAmount || 0),
+    0
+  )}`; // sum of refund amounts((sum, r) => sum + (r.totalAmount || 0), 0)}`;
 
   return (
     <div className="flex min-h-screen">
@@ -75,23 +93,31 @@ const RefundComplain = () => {
                 </tr>
               </thead>
               <tbody>
-                {refunds.map((r) => (
-                  <tr key={r.id} className="border-t border-gray-200">
+                {refunds.map((r, i) => (
+                  <tr key={i} className="border-t border-gray-200">
                     <td className="p-3 text-sm text-gray-700">{r.orderId}</td>
                     <td className="p-3 text-sm text-gray-700">{r.customer}</td>
-                    <td className="p-3 text-sm text-gray-700">{r.contact}</td>
-                    <td className="p-3 text-sm text-gray-700">{r.amount}</td>
+                    <td className="p-3 text-sm text-gray-700">
+                      {r.phoneNumber}
+                    </td>
+                    <td className="p-3 text-sm text-gray-700">
+                      ${r.totalAmount}
+                    </td>
                     <td className="p-3 text-sm text-gray-700">
                       <div className="relative inline-block">
                         <MoreVertical
                           className="w-5 h-5 cursor-pointer"
                           onClick={() =>
-                            setOpenMenuId(openMenuId === r.id ? null : r.id)
+                            setOpenMenuId(
+                              openMenuId === r.orderId ? null : r.orderId
+                            )
                           }
                         />
-                        {openMenuId === r.id && (
+                        {openMenuId === r.orderId && (
                           <button
-                            onClick={() => navigate("/order-details")}
+                            onClick={() =>
+                              navigate(`/order-details/${r.orderId}`)
+                            }
                             className="absolute top-6 left-0 bg-white border rounded shadow px-3 py-1 text-sm"
                           >
                             View details

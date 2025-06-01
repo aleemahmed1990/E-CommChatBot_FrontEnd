@@ -344,6 +344,14 @@ const Sidebar = ({ onSectionClick }) => {
           access: "",
           path: "/sales-data",
         },
+        {
+          id: 37,
+          number: "37.",
+
+          name: "Lost Stock Management",
+          access: "",
+          path: "/lost-stock",
+        },
       ],
     },
     {
