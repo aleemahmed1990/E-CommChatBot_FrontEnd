@@ -49,7 +49,7 @@ export default function AllOrders() {
       try {
         // fetch list of orders
         const listRes = await axios.get(
-          `http://localhost:5000/api/orders?${params}`
+          `https://married-flower-fern.glitch.me/api/orders?${params}`
         );
         const { orders: listOrders, total: listTotal } = listRes.data;
 
@@ -59,7 +59,7 @@ export default function AllOrders() {
             if (!o.customer) {
               try {
                 const detailRes = await axios.get(
-                  `http://localhost:5000/api/orders/${o.orderId}`
+                  `https://married-flower-fern.glitch.me/api/orders/${o.orderId}`
                 );
                 return { ...o, customer: detailRes.data.customer || "N/A" };
               } catch (err) {

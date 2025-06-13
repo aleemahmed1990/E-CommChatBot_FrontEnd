@@ -1,13 +1,17 @@
-// CreateDiscount.js
-import React, { useState } from "react";
-import { Lock, Search, ChevronDown, Bell } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  Lock,
+  Search,
+  ChevronDown,
+  Bell,
+  DollarSign,
+  Percent,
+  Calendar,
+  Tag,
+  Users,
+  Package,
+} from "lucide-react";
 import Sidebar from "../Sidebar/sidebar";
-
-const dummyProducts = [
-  { id: "P001", name: "Product A" },
-  { id: "P002", name: "Product B" },
-  { id: "P003", name: "Product C" },
-];
 
 const discountTypes = [
   "clearance",
@@ -27,39 +31,302 @@ const forWhoOptions = [
 ];
 
 export default function CreateDiscount() {
+  // Sidebar state
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [product, setProduct] = useState("");
-  const [status, setStatus] = useState("Enabled");
-  const [discountType, setDiscountType] = useState("");
-  const [forWho, setForWho] = useState("");
-  const [originalPrice, setOriginalPrice] = useState("");
-  const [oldPrice, setOldPrice] = useState("");
-  const [newPrice, setNewPrice] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [amount, setAmount] = useState("");
-  const [discountId, setDiscountId] = useState("");
-  const [discountTitle, setDiscountTitle] = useState("");
-  const [description, setDescription] = useState("");
 
-  const handleSave = () => {
-    console.log({
-      product,
-      status,
-      discountType,
-      forWho,
-      originalPrice,
-      oldPrice,
-      newPrice,
-      startDate,
-      endDate,
-      amount,
-      discountId,
-      discountTitle,
-      description,
-    });
-    alert("Saved!");
+  // State management
+  const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
+  // Form states
+  const [formData, setFormData] = useState({
+    discountType: "",
+    forWho: "",
+    originalPrice: "",
+    oldPrice: "",
+    newPrice: "",
+    startDate: "",
+    endDate: "",
+    amount: "",
+    discountTitle: "",
+    description: "",
+    status: "Enabled",
+  });
+
+  // UI states
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [calculatedDiscount, setCalculatedDiscount] = useState({
+    amount: 0,
+    percentage: 0,
+  });
+
+  // Check if discount type is "above amount" type
+  const isAboveAmountType = (type) => {
+    return type.includes("above amount");
   };
+
+  // Search for products
+  const searchProducts = async (query) => {
+    if (!query.trim()) {
+      setProducts([]);
+      setShowResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // Try multiple possible endpoints
+      const possibleEndpoints = [
+        `https://married-flower-fern.glitch.me/api/products`,
+      ];
+
+      let response;
+      let data;
+
+      for (const endpoint of possibleEndpoints) {
+        try {
+          console.log("Trying endpoint:", endpoint);
+          response = await fetch(endpoint);
+          if (response.ok) {
+            data = await response.json();
+            console.log("Success with endpoint:", endpoint, data);
+            break;
+          }
+        } catch (err) {
+          console.log("Failed endpoint:", endpoint, err.message);
+          continue;
+        }
+      }
+
+      if (data && data.success) {
+        // Handle different response formats
+        let products = [];
+        if (data.data && Array.isArray(data.data)) {
+          products = data.data.map((product) => ({
+            id: product._id,
+            productId: product.productId,
+            productName: product.productName,
+            categories: product.categories,
+            normalPrice: product.NormalPrice || 0,
+            stock: product.Stock || 0,
+            hasDiscount: !!product.discountConfig,
+            displayText: `${product.productName} (#${product.productId}) - ${
+              product.NormalPrice || 0
+            }`,
+            currentDiscountPrice: product.hasActiveDiscount
+              ? product.discountConfig?.newPrice
+              : null,
+          }));
+        }
+
+        setProducts(products);
+        setShowResults(true);
+      } else {
+        throw new Error("No valid endpoint found or invalid response");
+      }
+    } catch (error) {
+      console.error("Error searching products:", error);
+      setProducts([]);
+      // Show user-friendly error
+      setErrorMessage(
+        `Unable to load products. Please check if the server is running on port 5000. Error: ${error.message}`
+      );
+      setTimeout(() => setErrorMessage(""), 5000);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle product selection
+  const handleProductSelect = (product) => {
+    setSelectedProduct(product);
+    setSearchTerm(product.displayText);
+    setShowResults(false);
+
+    // Pre-fill original price from product data
+    setFormData((prev) => ({
+      ...prev,
+      originalPrice: product.normalPrice.toString() || "",
+      oldPrice: product.normalPrice.toString() || "",
+    }));
+  };
+
+  // Calculate discount when prices change
+  useEffect(() => {
+    const { originalPrice, newPrice } = formData;
+    if (originalPrice && newPrice) {
+      const original = parseFloat(originalPrice);
+      const discounted = parseFloat(newPrice);
+
+      if (original > 0 && discounted >= 0 && discounted < original) {
+        const amount = original - discounted;
+        const percentage = ((amount / original) * 100).toFixed(2);
+
+        setCalculatedDiscount({
+          amount: amount.toFixed(2),
+          percentage: parseFloat(percentage),
+        });
+      } else {
+        setCalculatedDiscount({ amount: 0, percentage: 0 });
+      }
+    }
+  }, [formData.originalPrice, formData.newPrice]);
+
+  // Handle form field changes
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  // Validate form
+  const validateForm = () => {
+    const required = [
+      "discountType",
+      "forWho",
+      "originalPrice",
+      "newPrice",
+      "startDate",
+      "discountTitle",
+    ];
+
+    for (const field of required) {
+      if (!formData[field]) {
+        throw new Error(
+          `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
+        );
+      }
+    }
+
+    if (!selectedProduct) {
+      throw new Error("Please select a product");
+    }
+
+    const originalPrice = parseFloat(formData.originalPrice);
+    const newPrice = parseFloat(formData.newPrice);
+
+    if (isNaN(originalPrice) || originalPrice <= 0) {
+      throw new Error("Original price must be a valid positive number");
+    }
+
+    if (isNaN(newPrice) || newPrice < 0) {
+      throw new Error("New price must be a valid non-negative number");
+    }
+
+    if (newPrice >= originalPrice) {
+      throw new Error("New price must be less than original price");
+    }
+
+    if (formData.endDate && formData.endDate <= formData.startDate) {
+      throw new Error("End date must be after start date");
+    }
+  };
+
+  // Handle form submission
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      setErrorMessage("");
+      setSuccessMessage("");
+
+      // Validate form
+      validateForm();
+
+      // Try multiple possible endpoints for creating discount
+      const possibleEndpoints = [
+        `https://married-flower-fern.glitch.me/api/products/${selectedProduct.id}/discount`,
+        `https://married-flower-fern.glitch.me/api/products/${selectedProduct.id}`, // Fallback to regular update
+      ];
+
+      let response;
+      let data;
+
+      for (const endpoint of possibleEndpoints) {
+        try {
+          console.log("Trying to save discount at:", endpoint);
+          response = await fetch(endpoint, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+          });
+
+          if (response.ok) {
+            data = await response.json();
+            console.log("Success saving discount:", data);
+            break;
+          }
+        } catch (err) {
+          console.log("Failed to save at:", endpoint, err.message);
+          continue;
+        }
+      }
+
+      if (data && data.success) {
+        setSuccessMessage(`✅ Discount created successfully for ${selectedProduct.productName}! 
+          Price: ${formData.originalPrice} → ${formData.newPrice} 
+          (${calculatedDiscount.percentage}% off, saving ${calculatedDiscount.amount})`);
+
+        // Reset form
+        resetForm();
+      } else {
+        throw new Error(
+          data?.message ||
+            "Failed to create discount - API endpoint not available"
+        );
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      setErrorMessage(
+        `❌ Error: ${error.message}. Please ensure the discount API routes are added to your products router.`
+      );
+    } finally {
+      setLoading(false);
+      // Clear messages after 6 seconds
+      setTimeout(() => {
+        setSuccessMessage("");
+        setErrorMessage("");
+      }, 6000);
+    }
+  };
+
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      discountType: "",
+      forWho: "",
+      originalPrice: "",
+      oldPrice: "",
+      newPrice: "",
+      startDate: "",
+      endDate: "",
+      amount: "",
+      discountTitle: "",
+      description: "",
+      status: "Enabled",
+    });
+    setSelectedProduct(null);
+    setSearchTerm("");
+    setCalculatedDiscount({ amount: 0, percentage: 0 });
+  };
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm && !selectedProduct) {
+        searchProducts(searchTerm);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, selectedProduct]);
 
   return (
     <div className="flex min-h-screen">
@@ -73,207 +340,537 @@ export default function CreateDiscount() {
       <div
         className={`transition-all duration-300 ${
           isSidebarOpen ? "lg:ml-80" : ""
-        } w-full bg-purple-50 p-6`}
+        } w-full bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100`}
       >
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 bg-purple-800 p-4 rounded">
-          <div className="flex items-center text-white space-x-2">
-            <Lock size={20} />
-            <h1 className="text-lg font-semibold">
-              71 Create Discount (discount is applied to one product at a time)
-            </h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Bell className="text-white cursor-pointer" size={20} />
-            <div className="w-8 h-8 bg-purple-400 rounded-full flex items-center justify-center text-white text-xs">
-              JM
+        <div className="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-800 p-6 shadow-xl">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center text-white space-x-3">
+              <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+                <Lock size={24} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">
+                  71 Create Discount (discount is applied to one product at a
+                  time)
+                </h1>
+                <p className="text-purple-100 text-sm">
+                  Apply discounts to products for different customer groups
+                </p>
+              </div>
             </div>
-            <button
-              onClick={handleSave}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-
-        {/* Select a product */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h2 className="font-medium mb-4">Select a product</h2>
-          <div className="relative">
-            <input
-              list="products"
-              placeholder="Search product"
-              value={product}
-              onChange={(e) => setProduct(e.target.value)}
-              className="w-full border rounded p-2 pr-10"
-            />
-            <datalist id="products">
-              {dummyProducts.map((p) => (
-                <option key={p.id} value={`${p.name} (#${p.id})`} />
-              ))}
-            </datalist>
-            <Search className="absolute right-3 top-1/2 -mt-2 text-gray-400" />
-          </div>
-        </div>
-
-        {/* Discount type & Status */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          {/* Discount types */}
-          <div className="flex-1 bg-white p-6 rounded-lg shadow">
-            <h2 className="font-medium mb-4">Select discount type</h2>
-            {discountTypes.map((type) => (
-              <label key={type} className="flex items-center mb-2">
-                <input
-                  type="radio"
-                  name="discountType"
-                  value={type}
-                  checked={discountType === type}
-                  onChange={() => setDiscountType(type)}
-                  className="mr-2"
-                />
-                {type}
-              </label>
-            ))}
-          </div>
-
-          {/* Status */}
-          <div className="w-full md:w-1/3 bg-white p-6 rounded-lg shadow">
-            <h3 className="font-medium mb-4">Status</h3>
-            {["Enabled", "Disabled"].map((st) => (
-              <label key={st} className="flex items-center mb-2">
-                <input
-                  type="radio"
-                  name="status"
-                  value={st}
-                  checked={status === st}
-                  onChange={() => setStatus(st)}
-                  className="mr-2"
-                />
-                {st}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* For who? */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h2 className="font-medium mb-4">For who?</h2>
-          {forWhoOptions.map((opt) => (
-            <label key={opt} className="flex items-center mb-2">
-              <input
-                type="radio"
-                name="forWho"
-                value={opt}
-                checked={forWho === opt}
-                onChange={() => setForWho(opt)}
-                className="mr-2"
+            <div className="flex items-center space-x-4">
+              <Bell
+                className="text-white cursor-pointer hover:text-purple-200"
+                size={20}
               />
-              {opt}
-            </label>
-          ))}
-        </div>
-
-        {/* Discount value */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h2 className="font-medium mb-4">Discount value</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm mb-1">Original price</label>
-              <input
-                type="text"
-                value={originalPrice}
-                onChange={(e) => setOriginalPrice(e.target.value)}
-                className="w-full border rounded p-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm mb-1">Old price</label>
-              <input
-                type="text"
-                value={oldPrice}
-                onChange={(e) => setOldPrice(e.target.value)}
-                className="w-full border rounded p-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm mb-1">New price</label>
-              <input
-                type="text"
-                value={newPrice}
-                onChange={(e) => setNewPrice(e.target.value)}
-                className="w-full border rounded p-2"
-              />
+              <div className="w-10 h-10 bg-purple-400 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                JM
+              </div>
+              <button
+                onClick={handleSave}
+                disabled={loading}
+                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <DollarSign size={16} />
+                    <span>Save</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Schedule */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h2 className="font-medium mb-4">Schedule</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm mb-1">Start date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full border rounded p-2"
-              />
+        <div className="p-6 max-w-7xl mx-auto">
+          {/* Success/Error Messages */}
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg shadow-sm">
+              {successMessage}
             </div>
-            <div>
-              <label className="block text-sm mb-1">
-                <span className="text-red-500">when it ends</span> End date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full border rounded p-2"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="block text-sm mb-1">or amount</label>
-              <input
-                type="text"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full border rounded p-2"
-              />
-            </div>
-          </div>
-        </div>
+          )}
 
-        {/* Discount basic info */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h2 className="font-medium mb-4">Discount basic info</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm mb-1">Discount ID</label>
+          {errorMessage && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg shadow-sm">
+              {errorMessage}
+            </div>
+          )}
+
+          {/* Product Selection */}
+          <div className="bg-white p-6 rounded-xl shadow-lg mb-6 border border-gray-100">
+            <div className="flex items-center space-x-2 mb-4">
+              <Package className="text-purple-600" size={20} />
+              <h2 className="text-lg font-semibold text-gray-800">
+                Select Product
+              </h2>
+            </div>
+
+            <div className="relative">
               <input
                 type="text"
-                value={discountId}
-                onChange={(e) => setDiscountId(e.target.value)}
-                className="w-full border rounded p-2"
+                placeholder="Search products by name, ID, or category..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  if (selectedProduct) {
+                    setSelectedProduct(null);
+                  }
+                }}
+                className="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
               />
+              <div className="absolute right-3 top-1/2 -mt-2">
+                {isSearching ? (
+                  <div className="animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+                ) : (
+                  <Search className="text-gray-400" size={16} />
+                )}
+              </div>
+
+              {/* Search Results Dropdown */}
+              {showResults && products.length > 0 && (
+                <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 shadow-xl max-h-60 overflow-y-auto">
+                  {products.map((product) => (
+                    <div
+                      key={product.id}
+                      onClick={() => handleProductSelect(product)}
+                      className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="font-medium text-gray-800">
+                            {product.productName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            ID: {product.productId} | Category:{" "}
+                            {product.categories || "N/A"}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-purple-600">
+                            ${product.normalPrice}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Stock: {product.stock}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div>
-              <label className="block text-sm mb-1">Discount title</label>
-              <input
-                type="text"
-                value={discountTitle}
-                onChange={(e) => setDiscountTitle(e.target.value)}
-                className="w-full border rounded p-2"
-              />
+
+            {/* Selected Product Display */}
+            {selectedProduct && (
+              <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-purple-800">
+                      {selectedProduct.productName}
+                    </h3>
+                    <p className="text-sm text-purple-600">
+                      Product ID: {selectedProduct.productId} | Category:{" "}
+                      {selectedProduct.categories || "N/A"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-purple-800">
+                      ${selectedProduct.normalPrice}
+                    </div>
+                    <div className="text-sm text-purple-600">Current Price</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Discount Configuration */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Discount Type & Target Audience */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Discount Types */}
+                <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Tag className="text-purple-600" size={20} />
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Discount Type
+                    </h3>
+                  </div>
+                  <div className="space-y-3">
+                    {discountTypes.map((type) => (
+                      <label
+                        key={type}
+                        className="flex items-center group cursor-pointer"
+                      >
+                        <input
+                          type="radio"
+                          name="discountType"
+                          value={type}
+                          checked={formData.discountType === type}
+                          onChange={(e) =>
+                            handleInputChange("discountType", e.target.value)
+                          }
+                          className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500"
+                        />
+                        <span
+                          className={`group-hover:text-purple-700 transition-colors capitalize ${
+                            isAboveAmountType(type)
+                              ? "text-red-600 font-medium"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {type}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Target Audience */}
+                <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Users className="text-purple-600" size={20} />
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Target Audience
+                    </h3>
+                  </div>
+                  <div className="space-y-3">
+                    {forWhoOptions.map((option) => (
+                      <label
+                        key={option}
+                        className="flex items-center group cursor-pointer"
+                      >
+                        <input
+                          type="radio"
+                          name="forWho"
+                          value={option}
+                          checked={formData.forWho === option}
+                          onChange={(e) =>
+                            handleInputChange("forWho", e.target.value)
+                          }
+                          className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500"
+                        />
+                        <span className="text-gray-700 group-hover:text-purple-700 transition-colors capitalize">
+                          {option}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Pricing Section */}
+              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <div className="flex items-center space-x-2 mb-6">
+                  <DollarSign className="text-purple-600" size={20} />
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Pricing Details
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Original Price *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.originalPrice}
+                      onChange={(e) =>
+                        handleInputChange("originalPrice", e.target.value)
+                      }
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Old Price (Display)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.oldPrice}
+                      onChange={(e) =>
+                        handleInputChange("oldPrice", e.target.value)
+                      }
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      New Price *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.newPrice}
+                      onChange={(e) =>
+                        handleInputChange("newPrice", e.target.value)
+                      }
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                {/* Discount Calculation Display */}
+                {calculatedDiscount.amount > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Percent className="text-green-600" size={16} />
+                        <span className="text-green-800 font-medium">
+                          Discount Calculation
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-green-800 font-bold">
+                          {calculatedDiscount.percentage}% OFF
+                        </div>
+                        <div className="text-green-600 text-sm">
+                          Save ${calculatedDiscount.amount}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Schedule Section */}
+              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <div className="flex items-center space-x-2 mb-6">
+                  <Calendar className="text-purple-600" size={20} />
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Schedule
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Start Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) =>
+                        handleInputChange("startDate", e.target.value)
+                      }
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) =>
+                        handleInputChange("endDate", e.target.value)
+                      }
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Usage Limit
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.amount}
+                      onChange={(e) =>
+                        handleInputChange("amount", e.target.value)
+                      }
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="Unlimited"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Discount Details */}
+              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-800 mb-6">
+                  Discount Information
+                </h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Discount Title *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.discountTitle}
+                      onChange={(e) =>
+                        handleInputChange("discountTitle", e.target.value)
+                      }
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="e.g., Summer Sale 2024, New Product Launch"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={formData.description}
+                      onChange={(e) =>
+                        handleInputChange("description", e.target.value)
+                      }
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      placeholder="Brief description of the discount offer..."
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm mb-1">Small description</label>
-              <textarea
-                rows={4}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full border rounded p-2 resize-none"
-              />
+
+            {/* Status & Summary */}
+            <div className="space-y-6">
+              {/* Status */}
+              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Status
+                </h3>
+                <div className="space-y-3">
+                  {["Enabled", "Disabled"].map((status) => (
+                    <label
+                      key={status}
+                      className="flex items-center group cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="status"
+                        value={status}
+                        checked={formData.status === status}
+                        onChange={(e) =>
+                          handleInputChange("status", e.target.value)
+                        }
+                        className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span
+                        className={`group-hover:text-purple-700 transition-colors ${
+                          status === "Enabled"
+                            ? "text-green-700 font-medium"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {status}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Discount Summary */}
+              {selectedProduct &&
+                formData.originalPrice &&
+                formData.newPrice && (
+                  <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-xl border border-purple-200">
+                    <h3 className="text-lg font-semibold text-purple-800 mb-4">
+                      Discount Summary
+                    </h3>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Product:</span>
+                        <span className="font-medium text-gray-800">
+                          {selectedProduct.productName}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Original Price:</span>
+                        <span className="font-medium text-gray-800">
+                          ${formData.originalPrice}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">New Price:</span>
+                        <span className="font-bold text-green-600">
+                          ${formData.newPrice}
+                        </span>
+                      </div>
+
+                      <hr className="border-purple-200" />
+
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">You Save:</span>
+                        <span className="font-bold text-green-600">
+                          ${calculatedDiscount.amount}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Discount:</span>
+                        <span className="font-bold text-green-600">
+                          {calculatedDiscount.percentage}%
+                        </span>
+                      </div>
+
+                      {formData.discountType && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Type:</span>
+                          <span
+                            className={`font-medium capitalize ${
+                              isAboveAmountType(formData.discountType)
+                                ? "text-red-600"
+                                : "text-purple-700"
+                            }`}
+                          >
+                            {formData.discountType}
+                          </span>
+                        </div>
+                      )}
+
+                      {formData.forWho && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">For:</span>
+                          <span className="font-medium text-purple-700 capitalize">
+                            {formData.forWho}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                <button
+                  onClick={resetForm}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors duration-200"
+                >
+                  Reset Form
+                </button>
+
+                <button
+                  onClick={handleSave}
+                  disabled={loading || !selectedProduct}
+                  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 px-4 rounded-lg font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Creating Discount..." : "Create Discount"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

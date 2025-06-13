@@ -42,15 +42,18 @@ import CreateDiscount from "./componenets/Discounts/createDiscounts";
 import AllDiscounts from "./componenets/Discounts/allDiscounts";
 import DiscountedProductsInvA from "./componenets/Discounts/DiscountedInventory";
 import InventoryControlCheckDiscount from "./componenets/Discounts/Inventorycontrol(discounts)";
-import ReferralDashboard from "./componenets/Refferal/referralDashboard";
-import ReferralDetail from "./componenets/Refferal/referralDetail";
+
 import ReferralProfit from "./componenets/Refferal/referralProfits";
 import ScooterDelivery from "./componenets/Order-management/ScooterDelivery";
 import SalesData from "./componenets/Sales/salesdata";
+import ReferralData from "./componenets/Refferal/referaldata";
 import CalendarComponent from "./componenets/Settings/Calendar";
 import CustomerPage from "./componenets/Customers/viewCustomers";
 import CustomerDetail from "./componenets/Customers/customerDetails";
 import LostStockManagement from "./componenets/Inventory/Loststock";
+import CustomerChatView from "./componenets/Customers/viewChat";
+import ReferralVideos from "./componenets/Refferal/referralDashboard";
+import ForemanReferrals from "./componenets/Refferal/Foremanprofits";
 
 function App() {
   return (
@@ -123,6 +126,14 @@ function App() {
           }
         />
         <Route
+          path="/customers/:id/chat"
+          element={
+            <>
+              <CustomerChatView />
+            </>
+          }
+        />
+        <Route
           path="/admin/supplier/add"
           element={
             <>
@@ -150,6 +161,22 @@ function App() {
           element={
             <>
               <DeliveryMain />
+            </>
+          }
+        />
+        <Route
+          path="/referrals-data"
+          element={
+            <>
+              <ReferralData />
+            </>
+          }
+        />
+        <Route
+          path="/referals-foreman"
+          element={
+            <>
+              <ForemanReferrals />
             </>
           }
         />
@@ -278,18 +305,11 @@ function App() {
           path="/referrals"
           element={
             <>
-              <ReferralDashboard />
+              <ReferralVideos />
             </>
           }
         />
-        <Route
-          path="/referral-detail"
-          element={
-            <>
-              <ReferralDetail />
-            </>
-          }
-        />
+
         <Route
           path="/referral-profits"
           element={

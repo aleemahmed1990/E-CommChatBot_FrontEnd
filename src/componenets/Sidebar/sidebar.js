@@ -479,8 +479,16 @@ const Sidebar = ({ onSectionClick }) => {
           name: "Finances (articial emp)",
           access: "",
         },
+        {
+          id: 105,
+          number: "105.",
+          icon: <CreditCard size={18} />,
+          name: "ANALYTICS",
+          access: "",
+        },
       ],
     },
+
     {
       title: " LOWER ADMIN",
       sections: [
@@ -502,9 +510,25 @@ const Sidebar = ({ onSectionClick }) => {
           id: 103,
           number: "150.",
           icon: <Users size={18} />,
-          name: "Referrals",
+          name: "Referrals video verification",
           access: "Video verification & sharing discount for each referral",
           path: "/referrals",
+        },
+        {
+          id: 103,
+          number: "151.",
+          icon: <Users size={18} />,
+          name: "Referrals data",
+          access: "Video verification & sharing discount for each referral",
+          path: "/referrals-data",
+        },
+        {
+          id: 103,
+          number: "155.",
+          icon: <Users size={18} />,
+          name: "Referrals foreman income",
+          access: "Video verification & sharing discount for each referral",
+          path: "/referals-foreman",
         },
       ],
     },

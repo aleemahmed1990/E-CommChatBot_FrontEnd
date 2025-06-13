@@ -14,7 +14,9 @@ const NonDeliveredOrders = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/complaints");
+        const res = await axios.get(
+          "https://married-flower-fern.glitch.me/api/complaints"
+        );
         const complaintsData = res.data.complaints || [];
 
         const filteredOrders = complaintsData
@@ -46,9 +48,12 @@ const NonDeliveredOrders = () => {
 
   const handleRefund = async (orderId) => {
     try {
-      await axios.put(`http://localhost:5000/api/orders/${orderId}/status`, {
-        status: "refund",
-      });
+      await axios.put(
+        `https://married-flower-fern.glitch.me/api/orders/${orderId}/status`,
+        {
+          status: "refund",
+        }
+      );
       setOrders((prev) => prev.filter((o) => o.orderId !== orderId));
       setMessage("Order has been marked as refund");
       setTimeout(() => setMessage(""), 3000);

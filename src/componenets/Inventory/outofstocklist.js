@@ -169,7 +169,9 @@ const OutOfStockList = () => {
       console.log("🔍 Fetching all products...");
 
       // Fetch ALL products using the basic endpoint
-      const response = await fetch("http://localhost:5000/api/products");
+      const response = await fetch(
+        "https://married-flower-fern.glitch.me/api/products"
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch products");
@@ -238,7 +240,9 @@ const OutOfStockList = () => {
   // Fetch suppliers
   const fetchSuppliers = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/suppliers");
+      const response = await fetch(
+        "https://married-flower-fern.glitch.me/api/suppliers"
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -262,7 +266,9 @@ const OutOfStockList = () => {
   const refreshProductData = async () => {
     try {
       console.log("🔄 Refreshing product data to get updated statuses...");
-      const response = await fetch("http://localhost:5000/api/products");
+      const response = await fetch(
+        "https://married-flower-fern.glitch.me/api/products"
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -367,7 +373,7 @@ const OutOfStockList = () => {
       console.log("📤 Sending order data:", orderData);
 
       const response = await fetch(
-        `http://localhost:5000/api/products/${product._id}/add-order`,
+        `https://married-flower-fern.glitch.me/api/products/${product._id}/add-order`,
         {
           method: "POST",
           headers: {
@@ -432,7 +438,7 @@ const OutOfStockList = () => {
       console.log(`🗑️ Removing product ${product.productId} from order list`);
 
       const response = await fetch(
-        `http://localhost:5000/api/products/${product._id}/remove-from-order`,
+        `https://married-flower-fern.glitch.me/api/products/${product._id}/remove-from-order`,
         {
           method: "PATCH",
           headers: {
@@ -535,7 +541,7 @@ const OutOfStockList = () => {
           };
 
           const response = await fetch(
-            `http://localhost:5000/api/products/${product._id}/add-order`,
+            `https://married-flower-fern.glitch.me/api/products/${product._id}/add-order`,
             {
               method: "POST",
               headers: {

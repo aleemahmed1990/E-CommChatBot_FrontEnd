@@ -25,9 +25,12 @@ const AllDeliveryComplaints = () => {
 
   const fetchDrivers = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5000/api/employees", {
-        params: { employeeCategory: "Driver" },
-      });
+      const { data } = await axios.get(
+        "https://married-flower-fern.glitch.me/api/employees",
+        {
+          params: { employeeCategory: "Driver" },
+        }
+      );
       setDrivers(data.data);
     } catch (err) {
       console.error("Error fetching drivers:", err);
@@ -36,7 +39,9 @@ const AllDeliveryComplaints = () => {
 
   const fetchComplaints = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5000/api/complaints");
+      const { data } = await axios.get(
+        "https://married-flower-fern.glitch.me/api/complaints"
+      );
       setComplaints(data.complaints);
     } catch (err) {
       console.error("Failed to fetch complaints:", err);
@@ -50,9 +55,12 @@ const AllDeliveryComplaints = () => {
 
   const handleComplainPress = async (orderId) => {
     try {
-      await axios.put(`http://localhost:5000/api/orders/${orderId}/status`, {
-        status: "complain-order",
-      });
+      await axios.put(
+        `https://married-flower-fern.glitch.me/api/orders/${orderId}/status`,
+        {
+          status: "complain-order",
+        }
+      );
       setComplaints((prev) => prev.filter((c) => c.orderId !== orderId));
     } catch (err) {
       console.error("Failed to update complaint status:", err);

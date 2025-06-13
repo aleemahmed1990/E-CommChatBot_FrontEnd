@@ -36,7 +36,7 @@ export default function InventoryCheck() {
       const possibleEndpoints = [
         "/api/products",
         "/api/product",
-        "http://localhost:5000/api/products",
+        "https://married-flower-fern.glitch.me/api/products",
         "http://localhost:3001/api/products",
         "http://localhost:8000/api/products",
       ];

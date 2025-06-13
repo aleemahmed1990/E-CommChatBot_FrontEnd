@@ -25,7 +25,7 @@ export default function VerificationView() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:5000/api/orders/${orderId}`)
+    fetch(`https://married-flower-fern.glitch.me/api/orders/${orderId}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
@@ -47,11 +47,14 @@ export default function VerificationView() {
   }, [orderId]);
 
   const handleApprove = () => {
-    fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "order-confirmed" }),
-    })
+    fetch(
+      `https://married-flower-fern.glitch.me/api/orders/${orderId}/status`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "order-confirmed" }),
+      }
+    )
       .then((res) => {
         if (!res.ok) throw new Error("Failed to update status");
         return res.json();
@@ -75,11 +78,14 @@ export default function VerificationView() {
       return;
     }
 
-    fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "order-refunded", reason: r }),
-    })
+    fetch(
+      `https://married-flower-fern.glitch.me/api/orders/${orderId}/status`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "order-refunded", reason: r }),
+      }
+    )
       .then((res) => {
         if (!res.ok) throw new Error("Failed to update status");
         return res.json();

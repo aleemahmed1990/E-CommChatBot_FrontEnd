@@ -71,8 +71,8 @@ export default function LostStockManagement() {
       setLoading(true);
 
       const possibleEndpoints = [
-        "http://localhost:5000/api/products", // Try regular products endpoint first - should definitely have AmountStockmintoReorder
-        "http://localhost:5000/api/products/lost-stock/summary", // Then try lost-stock summary
+        "https://married-flower-fern.glitch.me/api/products", // Try regular products endpoint first - should definitely have AmountStockmintoReorder
+        "https://married-flower-fern.glitch.me/api/products/lost-stock/summary", // Then try lost-stock summary
         "/api/products", // Relative path backups
         "/api/products/lost-stock/summary",
         "/api/product/lost-stock/summary",
@@ -262,7 +262,7 @@ export default function LostStockManagement() {
 
     try {
       const possibleEndpoints = [
-        `http://localhost:5000/api/products/update-lost-stock/${productId}`, // Primary port 5000
+        `https://married-flower-fern.glitch.me/api/products/update-lost-stock/${productId}`, // Primary port 5000
         `/api/products/update-lost-stock/${productId}`, // Relative path backup
         `/api/product/update-lost-stock/${productId}`,
       ];

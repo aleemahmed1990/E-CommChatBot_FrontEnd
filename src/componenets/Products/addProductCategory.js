@@ -9,7 +9,7 @@ import {
   XCircle as XIcon,
 } from "lucide-react";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://married-flower-fern.glitch.me";
 
 export default function AddCategory() {
   // --- State hooks ---

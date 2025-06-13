@@ -12,7 +12,7 @@ import Sidebar from "../Sidebar/sidebar";
 import { toast } from "react-hot-toast";
 
 // Updated API URL to connect to your backend server
-const API_URL = "http://localhost:5000";
+const API_URL = "https://married-flower-fern.glitch.me";
 
 const ViewProducts = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

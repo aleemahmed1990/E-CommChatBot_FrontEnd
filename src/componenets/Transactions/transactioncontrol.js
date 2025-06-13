@@ -41,7 +41,7 @@ export default function TransactionControlView() {
       limit: String(itemsPerPage),
     });
 
-    fetch(`http://localhost:5000/api/orders?${params}`)
+    fetch(`https://married-flower-fern.glitch.me/api/orders?${params}`)
       .then((res) => res.json())
       .then(({ orders = [], total = 0 }) => {
         setOrders(orders);
