@@ -435,7 +435,7 @@ const SupplierProfile = () => {
 
       // Add content type header for multipart/form-data
       const response = await fetch(
-        "https://ultra-inquisitive-oatmeal.glitch.me/api/suppliers",
+        "https://married-flower-fern.glitch.me/api/suppliers",
         {
           method: "POST",
           body: submitData,
@@ -507,7 +507,7 @@ const SupplierProfile = () => {
       if (formData.supplierId) {
         try {
           const response = await fetch(
-            `https://ultra-inquisitive-oatmeal.glitch.me/api/suppliers/${formData.supplierId}`
+            `https://married-flower-fern.glitch.me/api/suppliers/${formData.supplierId}`
           );
 
           if (response.ok) {

@@ -79,7 +79,7 @@ const SuppliersList = () => {
   });
 
   // Base API URL - using the same as SupplierViewOnly
-  const API_BASE_URL = "https://ultra-inquisitive-oatmeal.glitch.me";
+  const API_BASE_URL = "https://married-flower-fern.glitch.me";
 
   // Fetch suppliers on component mount
   useEffect(() => {

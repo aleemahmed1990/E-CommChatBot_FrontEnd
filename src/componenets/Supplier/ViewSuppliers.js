@@ -21,7 +21,7 @@ const SupplierViewOnly = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        "https://ultra-inquisitive-oatmeal.glitch.me/api/suppliers"
+        "https://married-flower-fern.glitch.me/api/suppliers"
       );
       const data = await response.json();
 
@@ -160,7 +160,7 @@ const SupplierViewOnly = () => {
                             {supplier.profilePicture ? (
                               <img
                                 className="h-10 w-10 rounded-full object-cover"
-                                src={`https://ultra-inquisitive-oatmeal.glitch.me${supplier.profilePicture}`}
+                                src={`https://married-flower-fern.glitch.me${supplier.profilePicture}`}
                                 alt={supplier.name}
                               />
                             ) : (
