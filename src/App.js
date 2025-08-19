@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import AdminLogin from "./componenets/Login/Login";
 import Sidebar from "./componenets/Sidebar/sidebar";
+import DeliveryManagementDashboard from "./componenets/Delivery&complaints/DeliveryTypes";
 import AllOrders from "./componenets/Orders/allOrders";
 import AddProduct from "./componenets/Products/addProducts";
 import AllEmployees from "./componenets/Employees/allEmployees";
@@ -54,6 +55,14 @@ import LostStockManagement from "./componenets/Inventory/Loststock";
 import CustomerChatView from "./componenets/Customers/viewChat";
 import ReferralVideos from "./componenets/Refferal/referralDashboard";
 import ForemanReferrals from "./componenets/Refferal/Foremanprofits";
+import RolePermissionsManager from "./componenets/Home/RoleManagement";
+import ManageUsers from "./componenets/Home/userManagement";
+import ReferralVideoSending from "./componenets/Refferal/referraldemovideo";
+import ReferralVideoManager from "./componenets/Refferal/referraldemovideo";
+import IntroductionVideoManagement159B from "./componenets/Refferal/IntroductionVideos";
+import SupportManagement from "./componenets/Support/supportManagemnt";
+import AreasManagement from "./componenets/Delivery&complaints/DeliveryAreas";
+import DeliveryManagementSystem from "./componenets/DeliverySystem/maindeliverysystem";
 
 function App() {
   return (
@@ -108,7 +117,6 @@ function App() {
             </>
           }
         />
-
         <Route
           path="/all-employees"
           element={
@@ -149,10 +157,26 @@ function App() {
         <Route path="/verification/:orderId" element={<VerificationView />} />
         <Route path="/bank-view/:orderId" element={<BankAccountView />} />
         <Route
-          path="/order-details"
+          path="/order-details/:orderId"
           element={
             <>
               <OrderDetails />
+            </>
+          }
+        />
+        <Route
+          path="/admin/delivery-areas"
+          element={
+            <>
+              <AreasManagement />
+            </>
+          }
+        />
+        <Route
+          path="/admin/delivery-types"
+          element={
+            <>
+              <DeliveryManagementDashboard />
             </>
           }
         />
@@ -161,6 +185,14 @@ function App() {
           element={
             <>
               <DeliveryMain />
+            </>
+          }
+        />
+        <Route
+          path="/support"
+          element={
+            <>
+              <SupportManagement />
             </>
           }
         />
@@ -177,6 +209,14 @@ function App() {
           element={
             <>
               <ForemanReferrals />
+            </>
+          }
+        />
+        <Route
+          path="/delivery-system"
+          element={
+            <>
+              <DeliveryManagementSystem />
             </>
           }
         />
@@ -205,6 +245,39 @@ function App() {
           }
         />
         <Route
+          path="/user-permissions"
+          element={
+            <>
+              <RolePermissionsManager />
+            </>
+          }
+        />
+        <Route
+          path="/ManageUsers"
+          element={
+            <>
+              <ManageUsers />
+            </>
+          }
+        />
+        <Route
+          path="/referral-demovideo"
+          element={
+            <>
+              <ReferralVideoManager />
+            </>
+          }
+        />
+        <Route
+          path="/intro-videos"
+          element={
+            <>
+              <IntroductionVideoManagement159B />
+            </>
+          }
+        />
+
+        <Route
           path="/non-delivered-orders"
           element={
             <>
@@ -212,7 +285,6 @@ function App() {
             </>
           }
         />
-
         <Route
           path="/ordersINcart"
           element={
@@ -309,7 +381,6 @@ function App() {
             </>
           }
         />
-
         <Route
           path="/referral-profits"
           element={
@@ -352,7 +423,6 @@ function App() {
         />
         {/* detail view for a given customer ID */}
         <Route path="/customers/:id" element={<CustomerDetail />} />
-
         <Route
           path="admin/supplier/edit"
           element={
@@ -369,7 +439,6 @@ function App() {
             </>
           }
         />
-
         <Route
           path="/admin/employee/edit"
           element={
@@ -378,7 +447,6 @@ function App() {
             </>
           }
         />
-
         <Route
           path="/admin/employee/add"
           element={
@@ -395,9 +463,8 @@ function App() {
             </>
           }
         />
-
         <Route
-          path="/home"
+          path="/dashboard"
           element={
             <>
               <HomePage />

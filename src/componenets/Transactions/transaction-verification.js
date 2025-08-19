@@ -12,20 +12,21 @@ export default function VerificationView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [imageZoomed, setImageZoomed] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   const reasons = [
     "cannot find amount against name/time",
     "empty page",
     "not clear text",
     "missing page",
-    " believe fake/scam",
+    "believe fake/scam",
     "double check",
     "other",
   ];
 
   useEffect(() => {
     setLoading(true);
-    fetch(`https://married-flower-fern.glitch.me/api/orders/${orderId}`)
+    fetch(`http://localhost:5000/api/orders/${orderId}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
@@ -33,9 +34,7 @@ export default function VerificationView() {
         return res.json();
       })
       .then((data) => {
-        if (data.error) throw new Error(data.error);
         console.log("Received order data:", data);
-
         setOrder(data);
         setLoading(false);
       })
@@ -46,125 +45,202 @@ export default function VerificationView() {
       });
   }, [orderId]);
 
-  const handleApprove = () => {
-    fetch(
-      `https://married-flower-fern.glitch.me/api/orders/${orderId}/status`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "order-confirmed" }),
+  const handleApprove = async () => {
+    if (updating) return;
+
+    setUpdating(true);
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/orders/${orderId}/status`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "order-confirmed",
+            reason: "Payment verified and approved",
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update status");
       }
-    )
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to update status");
-        return res.json();
-      })
-      .then(() => navigate("/Transactions-control"))
-      .catch((err) => {
-        console.error("Error approving order:", err);
-        alert("Failed to approve order: " + err.message);
-      });
+
+      const result = await response.json();
+      console.log("Order approved:", result);
+
+      // Show success message
+      alert("Order approved successfully!");
+
+      // Navigate back to transactions control
+      navigate("/Transactions-control");
+    } catch (err) {
+      console.error("Error approving order:", err);
+      alert("Failed to approve order: " + err.message);
+    } finally {
+      setUpdating(false);
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
+    if (updating) return;
+
     if (!reason) {
       alert("Please select a reason for rejection");
       return;
     }
 
-    const r = reason === "other" ? otherText : reason;
-    if (reason === "other" && !otherText) {
+    const rejectionReason = reason === "other" ? otherText : reason;
+    if (reason === "other" && !otherText.trim()) {
       alert("Please provide a reason for rejection");
       return;
     }
 
-    fetch(
-      `https://married-flower-fern.glitch.me/api/orders/${orderId}/status`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "order-refunded", reason: r }),
+    setUpdating(true);
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/orders/${orderId}/status`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "order-refunded",
+            reason: rejectionReason,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update status");
       }
-    )
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to update status");
-        return res.json();
-      })
-      .then(() => navigate("/Transactions-control"))
-      .catch((err) => {
-        console.error("Error rejecting order:", err);
-        alert("Failed to reject order: " + err.message);
-      });
+
+      const result = await response.json();
+      console.log("Order rejected:", result);
+
+      // Show success message
+      alert(`Order rejected successfully. Reason: ${rejectionReason}`);
+
+      // Navigate back to transactions control
+      navigate("/Transactions-control");
+    } catch (err) {
+      console.error("Error rejecting order:", err);
+      alert("Failed to reject order: " + err.message);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const toggleImageZoom = () => {
     setImageZoomed(!imageZoomed);
   };
 
-  // Improved helper function to correctly handle the image data
+  // Enhanced helper function to correctly handle the image data
   const getImageSource = () => {
     if (!order || !order.receiptImage) return null;
 
-    // Handle the case where receiptImage is a string containing the data URL
-    if (typeof order.receiptImage === "string") {
-      return order.receiptImage;
-    }
-
-    // Handle the case where receiptImage is an object with data property
-    if (order.receiptImage.data) {
-      // If data is already a base64 string
-      if (typeof order.receiptImage.data === "string") {
-        // Check if data already includes the data:image prefix
-        if (order.receiptImage.data.startsWith("data:")) {
-          return order.receiptImage.data;
-        }
-
-        // Otherwise construct the full data URL
-        const contentType = order.receiptImage.contentType || "image/jpeg";
-        return `data:${contentType};base64,${order.receiptImage.data}`;
+    try {
+      // Handle the case where receiptImage is a string containing the data URL
+      if (typeof order.receiptImage === "string") {
+        return order.receiptImage;
       }
 
-      // If data is an array (Buffer representation in JSON)
-      if (Array.isArray(order.receiptImage.data)) {
-        try {
-          const contentType = order.receiptImage.contentType || "image/jpeg";
+      // Handle the case where receiptImage is an object with data property
+      if (order.receiptImage && typeof order.receiptImage === "object") {
+        // If data is already a base64 string with data: prefix
+        if (typeof order.receiptImage.data === "string") {
+          if (order.receiptImage.data.startsWith("data:")) {
+            return order.receiptImage.data;
+          }
+
+          // Otherwise construct the full data URL
+          const contentType =
+            order.receiptImage.contentType ||
+            order.receiptImageMetadata?.mimetype ||
+            "image/jpeg";
+          return `data:${contentType};base64,${order.receiptImage.data}`;
+        }
+
+        // If data is an array (Buffer representation in JSON)
+        if (Array.isArray(order.receiptImage.data)) {
+          const contentType =
+            order.receiptImage.contentType ||
+            order.receiptImageMetadata?.mimetype ||
+            "image/jpeg";
           const base64String = btoa(
             order.receiptImage.data
               .map((byte) => String.fromCharCode(byte))
               .join("")
           );
           return `data:${contentType};base64,${base64String}`;
-        } catch (err) {
-          console.error("Error converting image data:", err);
-          return null;
+        }
+
+        // Handle direct data property
+        if (
+          order.receiptImage.data &&
+          order.receiptImage.data.startsWith("data:")
+        ) {
+          return order.receiptImage.data;
         }
       }
-    }
 
-    // Handle the direct format shown in your console
-    // Where receiptImage has the structure { data: "data:image/jpeg;base64,..." }
-    if (
-      order.receiptImage &&
-      typeof order.receiptImage === "object" &&
-      typeof order.receiptImage.data === "string" &&
-      order.receiptImage.data.startsWith("data:")
-    ) {
-      return order.receiptImage.data;
+      console.warn("Unsupported receiptImage format:", order.receiptImage);
+      return null;
+    } catch (error) {
+      console.error("Error processing receipt image:", error);
+      return null;
     }
-
-    console.error("Unsupported receiptImage format:", order.receiptImage);
-    return null;
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
-  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
-  if (!order) return <div className="p-6">Order not found</div>;
+  // Format currency
+  const formatCurrency = (amount) => {
+    if (typeof amount === "number") {
+      return `Rs. ${amount.toLocaleString()}`;
+    }
+    return `Rs. ${amount || "0"}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex">
+        <Sidebar isOpen={true} toggleSidebar={() => {}} />
+        <div className="ml-80 flex-1 bg-gray-50 p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="ml-4 text-gray-500">Loading order details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex">
+        <Sidebar isOpen={true} toggleSidebar={() => {}} />
+        <div className="ml-80 flex-1 bg-gray-50 p-6">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <strong>Error: </strong>
+            {error}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="flex">
+        <Sidebar isOpen={true} toggleSidebar={() => {}} />
+        <div className="ml-80 flex-1 bg-gray-50 p-6">
+          <div className="text-center py-8">
+            <p className="text-gray-500">Order not found</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const imageSource = getImageSource();
-  console.log(
-    "Image source:",
-    imageSource ? `${imageSource.substring(0, 50)}...` : "null"
-  );
 
   return (
     <div className="flex">
@@ -182,7 +258,7 @@ export default function VerificationView() {
                   e.stopPropagation();
                   toggleImageZoom();
                 }}
-                className="absolute top-2 right-2 bg-white rounded-full p-1"
+                className="absolute top-2 right-2 bg-white rounded-full p-1 hover:bg-gray-100"
               >
                 <X className="h-6 w-6" />
               </button>
@@ -197,52 +273,56 @@ export default function VerificationView() {
 
         <button
           onClick={() => navigate("/Transactions-control")}
-          className="mb-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md"
+          className="mb-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md transition-colors"
         >
-          &larr; Back
+          &larr; Back to Transactions
         </button>
 
         <div className="bg-white rounded-md p-6 mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* LEFT */}
+          {/* LEFT SIDE - Transaction Details */}
           <div className="flex space-x-4">
             <div className="text-center">
               <User className="h-12 w-12 text-gray-500 mx-auto" />
-              <p className="mt-2 text-gray-600 text-xs">{order.customer}</p>
+              <p className="mt-2 text-gray-600 text-xs">
+                {order.customer || order.customerName}
+              </p>
               <p className="text-gray-600 text-xs">Order #: {order.orderId}</p>
+              <p className="text-gray-500 text-xs">
+                {order.orderDate
+                  ? new Date(order.orderDate).toLocaleDateString()
+                  : "N/A"}
+              </p>
             </div>
             <div className="flex-1">
               <h2 className="text-sm font-semibold mb-2 text-gray-700">
-                Transaction screenshot
+                Transaction Screenshot
               </h2>
               <div
-                className="w-full h-40 bg-gray-100 flex items-center justify-center rounded-md mb-4 overflow-hidden cursor-pointer"
-                onClick={toggleImageZoom}
+                className="w-full h-40 bg-gray-100 flex items-center justify-center rounded-md mb-4 overflow-hidden cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors"
+                onClick={imageSource ? toggleImageZoom : undefined}
               >
                 {imageSource ? (
                   <img
                     src={imageSource}
                     alt="Receipt"
-                    className="object-contain h-full"
+                    className="object-contain h-full w-full"
                     onError={(e) => {
                       console.error("Image failed to load:", e);
-                      e.target.onerror = null;
-                      e.target.src = "";
+                      e.target.style.display = "none";
                       e.target.parentElement.innerHTML = `
-                        <div class="flex flex-col items-center justify-center">
-                          <svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex flex-col items-center justify-center text-gray-500">
+                          <svg class="h-10 w-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                           </svg>
-                          <p class="text-sm text-gray-500 mt-2">Failed to load image</p>
+                          <p class="text-sm">Failed to load image</p>
                         </div>
                       `;
                     }}
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center">
-                    <ImageIcon className="h-10 w-10 text-gray-400" />
-                    <p className="text-sm text-gray-500 mt-2">
-                      No image available
-                    </p>
+                  <div className="flex flex-col items-center justify-center text-gray-500">
+                    <ImageIcon className="h-10 w-10 mb-2" />
+                    <p className="text-sm">No image available</p>
                   </div>
                 )}
               </div>
@@ -251,42 +331,72 @@ export default function VerificationView() {
                   Click to zoom image
                 </p>
               )}
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold">AMOUNT RECEIVED:</h3>
-                <span className="text-lg font-bold text-red-600">
-                  {order.totalAmount}
-                </span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold">AMOUNT RECEIVED:</h3>
+                  <span className="text-lg font-bold text-red-600">
+                    {formatCurrency(order.totalAmount)}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p>
+                    <span className="font-medium">From:</span>{" "}
+                    {order.accountHolderName || "Not provided"}
+                  </p>
+                  <p>
+                    <span className="font-medium">Bank:</span>{" "}
+                    {order.paidBankName || "Not provided"}
+                  </p>
+                  <p>
+                    <span className="font-medium">Transaction ID:</span>{" "}
+                    {order.transactionId || "Not provided"}
+                  </p>
+                  <p>
+                    <span className="font-medium">Payment Method:</span>{" "}
+                    {order.paymentMethod || "Bank Transfer"}
+                  </p>
+                  <p>
+                    <span className="font-medium">Status:</span>
+                    <span
+                      className={`ml-1 px-2 py-1 rounded text-xs font-medium ${
+                        order.status === "pay-not-confirmed"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : order.status === "order-confirmed"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {order.status || "Unknown"}
+                    </span>
+                  </p>
+                </div>
               </div>
-              <p className="mt-2 text-gray-600 text-sm">
-                From: {order.accountHolderName || "–"}
-              </p>
-              <p className="text-gray-600 text-sm">
-                Bank: {order.paidBankName || "–"}
-              </p>
               <button
                 onClick={() => navigate(`/bank-view/${orderId}`)}
-                className="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-md font-medium"
+                className="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-md font-medium transition-colors"
               >
-                Double check manually
+                Double Check Manually
               </button>
             </div>
           </div>
 
-          {/* RIGHT */}
+          {/* RIGHT SIDE - Approval Section */}
           <div>
-            <h3 className="text-gray-700 font-semibold mb-3">Final approval</h3>
+            <h3 className="text-gray-700 font-semibold mb-3">Final Approval</h3>
             <div className="flex space-x-2 mb-4">
               <button
                 onClick={handleApprove}
-                className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-md font-medium"
+                disabled={updating}
+                className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-2 rounded-md font-medium transition-colors"
               >
-                Approved
+                {updating ? "Processing..." : "Approved"}
               </button>
               <button
                 onClick={handleReject}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md font-medium"
+                disabled={updating}
+                className="flex-1 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white py-2 rounded-md font-medium transition-colors"
               >
-                Not approved
+                {updating ? "Processing..." : "Not Approved"}
               </button>
             </div>
             <div className="border rounded-md p-4">
@@ -295,7 +405,7 @@ export default function VerificationView() {
               </p>
               <div className="space-y-2 mb-3 text-sm text-gray-600">
                 {reasons.map((r) => (
-                  <label key={r} className="flex items-center">
+                  <label key={r} className="flex items-center cursor-pointer">
                     <input
                       type="radio"
                       name="reason"
@@ -304,7 +414,7 @@ export default function VerificationView() {
                       onChange={() => setReason(r)}
                       className="mr-2"
                     />
-                    {r}
+                    <span className="capitalize">{r}</span>
                   </label>
                 ))}
               </div>
@@ -312,7 +422,7 @@ export default function VerificationView() {
                 <input
                   type="text"
                   placeholder="Write your reason"
-                  className="w-full border border-gray-300 rounded-md p-2 mb-3 text-sm"
+                  className="w-full border border-gray-300 rounded-md p-2 mb-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={otherText}
                   onChange={(e) => setOtherText(e.target.value)}
                 />
@@ -321,49 +431,142 @@ export default function VerificationView() {
           </div>
         </div>
 
-        {/* ORDER ITEMS */}
+        {/* ORDER DETAILS */}
         <div className="bg-white rounded-md p-6">
-          <h3 className="text-gray-700 font-semibold mb-4">Order details</h3>
+          <h3 className="text-gray-700 font-semibold mb-4">Order Details</h3>
           <div className="border rounded-md p-4 space-y-4">
-            {order.items &&
-              order.items.map((it, i) => (
+            {/* Order Items */}
+            {order.items && order.items.length > 0 ? (
+              order.items.map((item, i) => (
                 <div key={i} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <Package className="w-8 h-8 text-gray-500" />
                     <div>
-                      <p className="font-medium">{it.productName}</p>
+                      <p className="font-medium">{item.productName}</p>
                       <p className="text-xs text-gray-600">
-                        Qty: {it.quantity}
+                        Qty: {item.quantity}{" "}
+                        {item.weight && `• Weight: ${item.weight}`}
                       </p>
+                      {item.unitPrice && (
+                        <p className="text-xs text-gray-500">
+                          Unit Price: {formatCurrency(item.unitPrice)}
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <p className="font-medium">{it.totalPrice}</p>
+                  <p className="font-medium">
+                    {formatCurrency(item.totalPrice)}
+                  </p>
                 </div>
-              ))}
+              ))
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                No items found
+              </div>
+            )}
+
+            {/* Order Summary */}
             <div className="pt-4 border-t space-y-2 text-sm text-gray-600">
               <div className="flex justify-between">
-                <span>Sub total</span>
+                <span>Subtotal</span>
                 <span>
-                  {order.items
-                    ? order.items.reduce((sum, i) => sum + i.totalPrice, 0)
-                    : 0}
+                  {formatCurrency(
+                    order.items
+                      ? order.items.reduce(
+                          (sum, item) => sum + (item.totalPrice || 0),
+                          0
+                        )
+                      : 0
+                  )}
                 </span>
               </div>
+
               {order.deliveryCharge > 0 && (
                 <div className="flex justify-between">
-                  <span>Shipping fee</span>
-                  <span>{order.deliveryCharge}</span>
+                  <span>Delivery Fee</span>
+                  <span>{formatCurrency(order.deliveryCharge)}</span>
                 </div>
               )}
+
               {order.ecoDeliveryDiscount > 0 && (
-                <div className="flex justify-between">
-                  <span>Eco discount</span>
-                  <span>-{order.ecoDeliveryDiscount}</span>
+                <div className="flex justify-between text-green-600">
+                  <span>Eco Delivery Discount</span>
+                  <span>-{formatCurrency(order.ecoDeliveryDiscount)}</span>
                 </div>
               )}
-              <div className="flex justify-between font-bold text-gray-800">
-                <span>Total</span>
-                <span>{order.totalAmount}</span>
+
+              {order.firstOrderDiscount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>First Order Discount</span>
+                  <span>-{formatCurrency(order.firstOrderDiscount)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between font-bold text-gray-800 pt-2 border-t">
+                <span>Total Amount</span>
+                <span>{formatCurrency(order.totalAmount)}</span>
+              </div>
+            </div>
+
+            {/* Delivery Information */}
+            {(order.deliveryAddress ||
+              order.deliveryLocation ||
+              order.deliveryOption) && (
+              <div className="pt-4 border-t">
+                <h4 className="font-medium text-gray-700 mb-2">
+                  Delivery Information
+                </h4>
+                <div className="text-sm text-gray-600 space-y-1">
+                  {order.deliveryOption && (
+                    <p>
+                      <span className="font-medium">Delivery Option:</span>{" "}
+                      {order.deliveryOption}
+                    </p>
+                  )}
+                  {order.deliveryLocation && (
+                    <p>
+                      <span className="font-medium">Location:</span>{" "}
+                      {order.deliveryLocation}
+                    </p>
+                  )}
+                  {order.deliveryAddress && (
+                    <div>
+                      <p className="font-medium">Address:</p>
+                      <div className="ml-2">
+                        {order.deliveryAddress.nickname && (
+                          <p>• {order.deliveryAddress.nickname}</p>
+                        )}
+                        {order.deliveryAddress.fullAddress && (
+                          <p>• {order.deliveryAddress.fullAddress}</p>
+                        )}
+                        {order.deliveryAddress.area && (
+                          <p>• Area: {order.deliveryAddress.area}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Customer Information */}
+            <div className="pt-4 border-t">
+              <h4 className="font-medium text-gray-700 mb-2">
+                Customer Information
+              </h4>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>
+                  <span className="font-medium">Name:</span>{" "}
+                  {order.customer || order.customerName}
+                </p>
+                <p>
+                  <span className="font-medium">Phone:</span>{" "}
+                  {order.customerPhone}
+                </p>
+                <p>
+                  <span className="font-medium">Customer ID:</span>{" "}
+                  {order.customerId}
+                </p>
               </div>
             </div>
           </div>

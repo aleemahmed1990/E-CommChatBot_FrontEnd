@@ -11,7 +11,6 @@ import {
   Users,
   Package,
 } from "lucide-react";
-import Sidebar from "../Sidebar/sidebar";
 
 const discountTypes = [
   "clearance",
@@ -31,9 +30,6 @@ const forWhoOptions = [
 ];
 
 export default function CreateDiscount() {
-  // Sidebar state
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
   // State management
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -81,9 +77,7 @@ export default function CreateDiscount() {
     setIsSearching(true);
     try {
       // Try multiple possible endpoints
-      const possibleEndpoints = [
-        `https://married-flower-fern.glitch.me/api/products`,
-      ];
+      const possibleEndpoints = [`http://localhost:5000/api/products`];
 
       let response;
       let data;
@@ -240,8 +234,8 @@ export default function CreateDiscount() {
 
       // Try multiple possible endpoints for creating discount
       const possibleEndpoints = [
-        `https://married-flower-fern.glitch.me/api/products/${selectedProduct.id}/discount`,
-        `https://married-flower-fern.glitch.me/api/products/${selectedProduct.id}`, // Fallback to regular update
+        `http://localhost:5000/api/products/${selectedProduct.id}/discount`,
+        `http://localhost:5000/api/products/${selectedProduct.id}`, // Fallback to regular update
       ];
 
       let response;
@@ -329,548 +323,535 @@ export default function CreateDiscount() {
   }, [searchTerm, selectedProduct]);
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={isSidebarOpen}
-        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-      />
-
+    <div>
       {/* Main Content */}
-      <div
-        className={`transition-all duration-300 ${
-          isSidebarOpen ? "lg:ml-80" : ""
-        } w-full bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100`}
-      >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-800 p-6 shadow-xl">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center text-white space-x-3">
-              <div className="bg-white bg-opacity-20 p-2 rounded-lg">
-                <Lock size={24} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">
-                  71 Create Discount (discount is applied to one product at a
-                  time)
-                </h1>
-                <p className="text-purple-100 text-sm">
-                  Apply discounts to products for different customer groups
-                </p>
-              </div>
+
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-800 p-6 shadow-xl">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center text-white space-x-3">
+            <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+              <Lock size={24} />
             </div>
-            <div className="flex items-center space-x-4">
-              <Bell
-                className="text-white cursor-pointer hover:text-purple-200"
-                size={20}
-              />
-              <div className="w-10 h-10 bg-purple-400 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                JM
-              </div>
-              <button
-                onClick={handleSave}
-                disabled={loading}
-                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              >
-                {loading ? (
-                  <>
-                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <DollarSign size={16} />
-                    <span>Save</span>
-                  </>
-                )}
-              </button>
+            <div>
+              <h1 className="text-2xl font-bold">
+                71 Create Discount (discount is applied to one product at a
+                time)
+              </h1>
+              <p className="text-purple-100 text-sm">
+                Apply discounts to products for different customer groups
+              </p>
             </div>
           </div>
+          <div className="flex items-center space-x-4">
+            <Bell
+              className="text-white cursor-pointer hover:text-purple-200"
+              size={20}
+            />
+            <div className="w-10 h-10 bg-purple-400 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+              JM
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <DollarSign size={16} />
+                  <span>Save</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
+      </div>
 
-        <div className="p-6 max-w-7xl mx-auto">
-          {/* Success/Error Messages */}
-          {successMessage && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg shadow-sm">
-              {successMessage}
-            </div>
-          )}
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Success/Error Messages */}
+        {successMessage && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg shadow-sm">
+            {successMessage}
+          </div>
+        )}
 
-          {errorMessage && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg shadow-sm">
-              {errorMessage}
-            </div>
-          )}
+        {errorMessage && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg shadow-sm">
+            {errorMessage}
+          </div>
+        )}
 
-          {/* Product Selection */}
-          <div className="bg-white p-6 rounded-xl shadow-lg mb-6 border border-gray-100">
-            <div className="flex items-center space-x-2 mb-4">
-              <Package className="text-purple-600" size={20} />
-              <h2 className="text-lg font-semibold text-gray-800">
-                Select Product
-              </h2>
-            </div>
+        {/* Product Selection */}
+        <div className="bg-white p-6 rounded-xl shadow-lg mb-6 border border-gray-100">
+          <div className="flex items-center space-x-2 mb-4">
+            <Package className="text-purple-600" size={20} />
+            <h2 className="text-lg font-semibold text-gray-800">
+              Select Product
+            </h2>
+          </div>
 
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search products by name, ID, or category..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  if (selectedProduct) {
-                    setSelectedProduct(null);
-                  }
-                }}
-                className="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-              />
-              <div className="absolute right-3 top-1/2 -mt-2">
-                {isSearching ? (
-                  <div className="animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full"></div>
-                ) : (
-                  <Search className="text-gray-400" size={16} />
-                )}
-              </div>
-
-              {/* Search Results Dropdown */}
-              {showResults && products.length > 0 && (
-                <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 shadow-xl max-h-60 overflow-y-auto">
-                  {products.map((product) => (
-                    <div
-                      key={product.id}
-                      onClick={() => handleProductSelect(product)}
-                      className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-medium text-gray-800">
-                            {product.productName}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            ID: {product.productId} | Category:{" "}
-                            {product.categories || "N/A"}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-semibold text-purple-600">
-                            ${product.normalPrice}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Stock: {product.stock}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search products by name, ID, or category..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                if (selectedProduct) {
+                  setSelectedProduct(null);
+                }
+              }}
+              className="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+            />
+            <div className="absolute right-3 top-1/2 -mt-2">
+              {isSearching ? (
+                <div className="animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+              ) : (
+                <Search className="text-gray-400" size={16} />
               )}
             </div>
 
-            {/* Selected Product Display */}
-            {selectedProduct && (
-              <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-purple-800">
-                      {selectedProduct.productName}
-                    </h3>
-                    <p className="text-sm text-purple-600">
-                      Product ID: {selectedProduct.productId} | Category:{" "}
-                      {selectedProduct.categories || "N/A"}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-purple-800">
-                      ${selectedProduct.normalPrice}
+            {/* Search Results Dropdown */}
+            {showResults && products.length > 0 && (
+              <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 shadow-xl max-h-60 overflow-y-auto">
+                {products.map((product) => (
+                  <div
+                    key={product.id}
+                    onClick={() => handleProductSelect(product)}
+                    className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="font-medium text-gray-800">
+                          {product.productName}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          ID: {product.productId} | Category:{" "}
+                          {product.categories || "N/A"}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-purple-600">
+                          ${product.normalPrice}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Stock: {product.stock}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-sm text-purple-600">Current Price</div>
                   </div>
-                </div>
+                ))}
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Discount Configuration */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Discount Type & Target Audience */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Discount Types */}
-                <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Tag className="text-purple-600" size={20} />
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      Discount Type
-                    </h3>
-                  </div>
-                  <div className="space-y-3">
-                    {discountTypes.map((type) => (
-                      <label
-                        key={type}
-                        className="flex items-center group cursor-pointer"
-                      >
-                        <input
-                          type="radio"
-                          name="discountType"
-                          value={type}
-                          checked={formData.discountType === type}
-                          onChange={(e) =>
-                            handleInputChange("discountType", e.target.value)
-                          }
-                          className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500"
-                        />
-                        <span
-                          className={`group-hover:text-purple-700 transition-colors capitalize ${
-                            isAboveAmountType(type)
-                              ? "text-red-600 font-medium"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          {type}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Target Audience */}
-                <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Users className="text-purple-600" size={20} />
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      Target Audience
-                    </h3>
-                  </div>
-                  <div className="space-y-3">
-                    {forWhoOptions.map((option) => (
-                      <label
-                        key={option}
-                        className="flex items-center group cursor-pointer"
-                      >
-                        <input
-                          type="radio"
-                          name="forWho"
-                          value={option}
-                          checked={formData.forWho === option}
-                          onChange={(e) =>
-                            handleInputChange("forWho", e.target.value)
-                          }
-                          className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500"
-                        />
-                        <span className="text-gray-700 group-hover:text-purple-700 transition-colors capitalize">
-                          {option}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Pricing Section */}
-              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                <div className="flex items-center space-x-2 mb-6">
-                  <DollarSign className="text-purple-600" size={20} />
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Pricing Details
+          {/* Selected Product Display */}
+          {selectedProduct && (
+            <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-purple-800">
+                    {selectedProduct.productName}
                   </h3>
+                  <p className="text-sm text-purple-600">
+                    Product ID: {selectedProduct.productId} | Category:{" "}
+                    {selectedProduct.categories || "N/A"}
+                  </p>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Original Price *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.originalPrice}
-                      onChange={(e) =>
-                        handleInputChange("originalPrice", e.target.value)
-                      }
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="0.00"
-                    />
+                <div className="text-right">
+                  <div className="text-lg font-bold text-purple-800">
+                    ${selectedProduct.normalPrice}
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Old Price (Display)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.oldPrice}
-                      onChange={(e) =>
-                        handleInputChange("oldPrice", e.target.value)
-                      }
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      New Price *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.newPrice}
-                      onChange={(e) =>
-                        handleInputChange("newPrice", e.target.value)
-                      }
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-
-                {/* Discount Calculation Display */}
-                {calculatedDiscount.amount > 0 && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Percent className="text-green-600" size={16} />
-                        <span className="text-green-800 font-medium">
-                          Discount Calculation
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-green-800 font-bold">
-                          {calculatedDiscount.percentage}% OFF
-                        </div>
-                        <div className="text-green-600 text-sm">
-                          Save ${calculatedDiscount.amount}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Schedule Section */}
-              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                <div className="flex items-center space-x-2 mb-6">
-                  <Calendar className="text-purple-600" size={20} />
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Schedule
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Start Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) =>
-                        handleInputChange("startDate", e.target.value)
-                      }
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      End Date
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) =>
-                        handleInputChange("endDate", e.target.value)
-                      }
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Usage Limit
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.amount}
-                      onChange={(e) =>
-                        handleInputChange("amount", e.target.value)
-                      }
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="Unlimited"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Discount Details */}
-              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-6">
-                  Discount Information
-                </h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Discount Title *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.discountTitle}
-                      onChange={(e) =>
-                        handleInputChange("discountTitle", e.target.value)
-                      }
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="e.g., Summer Sale 2024, New Product Launch"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={formData.description}
-                      onChange={(e) =>
-                        handleInputChange("description", e.target.value)
-                      }
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                      placeholder="Brief description of the discount offer..."
-                    />
-                  </div>
+                  <div className="text-sm text-purple-600">Current Price</div>
                 </div>
               </div>
             </div>
+          )}
+        </div>
 
-            {/* Status & Summary */}
-            <div className="space-y-6">
-              {/* Status */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Discount Configuration */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Discount Type & Target Audience */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Discount Types */}
               <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Status
-                </h3>
+                <div className="flex items-center space-x-2 mb-4">
+                  <Tag className="text-purple-600" size={20} />
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Discount Type
+                  </h3>
+                </div>
                 <div className="space-y-3">
-                  {["Enabled", "Disabled"].map((status) => (
+                  {discountTypes.map((type) => (
                     <label
-                      key={status}
+                      key={type}
                       className="flex items-center group cursor-pointer"
                     >
                       <input
                         type="radio"
-                        name="status"
-                        value={status}
-                        checked={formData.status === status}
+                        name="discountType"
+                        value={type}
+                        checked={formData.discountType === type}
                         onChange={(e) =>
-                          handleInputChange("status", e.target.value)
+                          handleInputChange("discountType", e.target.value)
                         }
                         className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500"
                       />
                       <span
-                        className={`group-hover:text-purple-700 transition-colors ${
-                          status === "Enabled"
-                            ? "text-green-700 font-medium"
+                        className={`group-hover:text-purple-700 transition-colors capitalize ${
+                          isAboveAmountType(type)
+                            ? "text-red-600 font-medium"
                             : "text-gray-700"
                         }`}
                       >
-                        {status}
+                        {type}
                       </span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              {/* Discount Summary */}
-              {selectedProduct &&
-                formData.originalPrice &&
-                formData.newPrice && (
-                  <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-xl border border-purple-200">
-                    <h3 className="text-lg font-semibold text-purple-800 mb-4">
-                      Discount Summary
-                    </h3>
+              {/* Target Audience */}
+              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Users className="text-purple-600" size={20} />
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Target Audience
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {forWhoOptions.map((option) => (
+                    <label
+                      key={option}
+                      className="flex items-center group cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="forWho"
+                        value={option}
+                        checked={formData.forWho === option}
+                        onChange={(e) =>
+                          handleInputChange("forWho", e.target.value)
+                        }
+                        className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="text-gray-700 group-hover:text-purple-700 transition-colors capitalize">
+                        {option}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-700">Product:</span>
-                        <span className="font-medium text-gray-800">
-                          {selectedProduct.productName}
-                        </span>
+            {/* Pricing Section */}
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+              <div className="flex items-center space-x-2 mb-6">
+                <DollarSign className="text-purple-600" size={20} />
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Pricing Details
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Original Price *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.originalPrice}
+                    onChange={(e) =>
+                      handleInputChange("originalPrice", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Old Price (Display)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.oldPrice}
+                    onChange={(e) =>
+                      handleInputChange("oldPrice", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    New Price *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.newPrice}
+                    onChange={(e) =>
+                      handleInputChange("newPrice", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              {/* Discount Calculation Display */}
+              {calculatedDiscount.amount > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Percent className="text-green-600" size={16} />
+                      <span className="text-green-800 font-medium">
+                        Discount Calculation
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-green-800 font-bold">
+                        {calculatedDiscount.percentage}% OFF
                       </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-gray-700">Original Price:</span>
-                        <span className="font-medium text-gray-800">
-                          ${formData.originalPrice}
-                        </span>
+                      <div className="text-green-600 text-sm">
+                        Save ${calculatedDiscount.amount}
                       </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-gray-700">New Price:</span>
-                        <span className="font-bold text-green-600">
-                          ${formData.newPrice}
-                        </span>
-                      </div>
-
-                      <hr className="border-purple-200" />
-
-                      <div className="flex justify-between">
-                        <span className="text-gray-700">You Save:</span>
-                        <span className="font-bold text-green-600">
-                          ${calculatedDiscount.amount}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-gray-700">Discount:</span>
-                        <span className="font-bold text-green-600">
-                          {calculatedDiscount.percentage}%
-                        </span>
-                      </div>
-
-                      {formData.discountType && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-700">Type:</span>
-                          <span
-                            className={`font-medium capitalize ${
-                              isAboveAmountType(formData.discountType)
-                                ? "text-red-600"
-                                : "text-purple-700"
-                            }`}
-                          >
-                            {formData.discountType}
-                          </span>
-                        </div>
-                      )}
-
-                      {formData.forWho && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-700">For:</span>
-                          <span className="font-medium text-purple-700 capitalize">
-                            {formData.forWho}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   </div>
-                )}
+                </div>
+              )}
+            </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button
-                  onClick={resetForm}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors duration-200"
-                >
-                  Reset Form
-                </button>
-
-                <button
-                  onClick={handleSave}
-                  disabled={loading || !selectedProduct}
-                  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 px-4 rounded-lg font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? "Creating Discount..." : "Create Discount"}
-                </button>
+            {/* Schedule Section */}
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+              <div className="flex items-center space-x-2 mb-6">
+                <Calendar className="text-purple-600" size={20} />
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Schedule
+                </h3>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) =>
+                      handleInputChange("startDate", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) =>
+                      handleInputChange("endDate", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Usage Limit
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.amount}
+                    onChange={(e) =>
+                      handleInputChange("amount", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Unlimited"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Discount Details */}
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-800 mb-6">
+                Discount Information
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Discount Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.discountTitle}
+                    onChange={(e) =>
+                      handleInputChange("discountTitle", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="e.g., Summer Sale 2024, New Product Launch"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={formData.description}
+                    onChange={(e) =>
+                      handleInputChange("description", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                    placeholder="Brief description of the discount offer..."
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Status & Summary */}
+          <div className="space-y-6">
+            {/* Status */}
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Status
+              </h3>
+              <div className="space-y-3">
+                {["Enabled", "Disabled"].map((status) => (
+                  <label
+                    key={status}
+                    className="flex items-center group cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="status"
+                      value={status}
+                      checked={formData.status === status}
+                      onChange={(e) =>
+                        handleInputChange("status", e.target.value)
+                      }
+                      className="mr-3 w-4 h-4 text-purple-600 focus:ring-purple-500"
+                    />
+                    <span
+                      className={`group-hover:text-purple-700 transition-colors ${
+                        status === "Enabled"
+                          ? "text-green-700 font-medium"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      {status}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Discount Summary */}
+            {selectedProduct && formData.originalPrice && formData.newPrice && (
+              <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-xl border border-purple-200">
+                <h3 className="text-lg font-semibold text-purple-800 mb-4">
+                  Discount Summary
+                </h3>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Product:</span>
+                    <span className="font-medium text-gray-800">
+                      {selectedProduct.productName}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Original Price:</span>
+                    <span className="font-medium text-gray-800">
+                      ${formData.originalPrice}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">New Price:</span>
+                    <span className="font-bold text-green-600">
+                      ${formData.newPrice}
+                    </span>
+                  </div>
+
+                  <hr className="border-purple-200" />
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">You Save:</span>
+                    <span className="font-bold text-green-600">
+                      ${calculatedDiscount.amount}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Discount:</span>
+                    <span className="font-bold text-green-600">
+                      {calculatedDiscount.percentage}%
+                    </span>
+                  </div>
+
+                  {formData.discountType && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Type:</span>
+                      <span
+                        className={`font-medium capitalize ${
+                          isAboveAmountType(formData.discountType)
+                            ? "text-red-600"
+                            : "text-purple-700"
+                        }`}
+                      >
+                        {formData.discountType}
+                      </span>
+                    </div>
+                  )}
+
+                  {formData.forWho && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">For:</span>
+                      <span className="font-medium text-purple-700 capitalize">
+                        {formData.forWho}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <button
+                onClick={resetForm}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors duration-200"
+              >
+                Reset Form
+              </button>
+
+              <button
+                onClick={handleSave}
+                disabled={loading || !selectedProduct}
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 px-4 rounded-lg font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? "Creating Discount..." : "Create Discount"}
+              </button>
             </div>
           </div>
         </div>

@@ -84,7 +84,7 @@ export default function ReferralVideos() {
     try {
       setLoading(true);
       const response = await fetch(
-        `https://married-flower-fern.glitch.me/api/referral-videos?status=${activeTab}`
+        `http://localhost:5000/api/referral-videos?status=${activeTab}`
       );
       const data = await response.json();
 
@@ -105,7 +105,7 @@ export default function ReferralVideos() {
     try {
       setUpdating(true);
       const response = await fetch(
-        "https://married-flower-fern.glitch.me/api/referral-videos/update-status",
+        "http://localhost:5000/api/referral-videos/update-status",
         {
           method: "POST",
           headers: {

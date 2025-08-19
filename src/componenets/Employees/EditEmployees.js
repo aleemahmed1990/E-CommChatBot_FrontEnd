@@ -96,7 +96,7 @@ const EditEmployees = () => {
   ];
 
   // Base API URL for the local server
-  const API_BASE_URL = "https://married-flower-fern.glitch.me";
+  const API_BASE_URL = "http://localhost:5000";
 
   useEffect(() => {
     const fetchEmployees = async () => {

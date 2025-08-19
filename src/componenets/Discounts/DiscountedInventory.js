@@ -68,7 +68,7 @@ export default function DiscountedProductsInvA() {
       // Use dynamic URL based on network setup
       const baseURL =
         window.location.hostname === "localhost"
-          ? "https://married-flower-fern.glitch.me"
+          ? "http://localhost:5000"
           : `http://${window.location.hostname}:5000`;
 
       console.log(

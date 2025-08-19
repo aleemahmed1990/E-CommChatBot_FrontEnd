@@ -14,11 +14,10 @@ import {
   Trash2,
   AlertCircle,
 } from "lucide-react";
-import Sidebar from "../Sidebar/sidebar";
 
 export default function AllDiscounts() {
   // State management
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   const [discounts, setDiscounts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -68,7 +67,7 @@ export default function AllDiscounts() {
       // Use dynamic URL based on your network setup
       const baseURL =
         window.location.hostname === "localhost"
-          ? "https://married-flower-fern.glitch.me"
+          ? "http://localhost:5000"
           : `http://${window.location.hostname}:5000`;
 
       console.log(
@@ -272,7 +271,7 @@ export default function AllDiscounts() {
     try {
       const baseURL =
         window.location.hostname === "localhost"
-          ? "https://married-flower-fern.glitch.me"
+          ? "http://localhost:5000"
           : `http://${window.location.hostname}:5000`;
 
       console.log(
@@ -344,7 +343,7 @@ export default function AllDiscounts() {
     try {
       const baseURL =
         window.location.hostname === "localhost"
-          ? "https://married-flower-fern.glitch.me"
+          ? "http://localhost:5000"
           : `http://${window.location.hostname}:5000`;
 
       console.log("🗑️ Deleting discount for product:", productId);
@@ -425,16 +424,7 @@ export default function AllDiscounts() {
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar
-        isOpen={isSidebarOpen}
-        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-      />
-
-      <div
-        className={`transition-all duration-300 ${
-          isSidebarOpen ? "lg:ml-80" : ""
-        } w-full bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 p-4`}
-      >
+      <div className="w-full bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 p-4 transition-all duration-300">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-800 p-6 rounded-xl shadow-lg text-white">
           <div className="flex items-center space-x-3">

@@ -157,7 +157,7 @@ export default function ReferralData() {
     try {
       setLoading(true);
       const response = await fetch(
-        `https://married-flower-fern.glitch.me/api/referral-data?customerType=${selectedCustomerType}&period=${selectedPeriod}&filter=${selectedFilter}`
+        `http://localhost:5000/api/referral-data?customerType=${selectedCustomerType}&period=${selectedPeriod}&filter=${selectedFilter}`
       );
       const data = await response.json();
 

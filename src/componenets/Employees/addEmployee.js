@@ -4,7 +4,7 @@ import { ChevronDown, Upload, PlusCircle, X, AlertCircle } from "lucide-react";
 import Sidebar from "../Sidebar/sidebar";
 
 // Base URL for API requests
-const API_BASE_URL = "https://married-flower-fern.glitch.me";
+const API_BASE_URL = "http://localhost:5000";
 
 const AddEmployee = ({ employeeId }) => {
   const [formData, setFormData] = useState({

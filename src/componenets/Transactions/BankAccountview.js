@@ -17,7 +17,7 @@ export default function BankAccountView() {
   const [allocatedStatus, setAllocatedStatus] = useState("allocated");
 
   useEffect(() => {
-    fetch(`https://married-flower-fern.glitch.me/api/orders/${orderId}`)
+    fetch(`http://localhost:5000/api/orders/${orderId}`)
       .then((r) => r.json())
       .then(setOrder)
       .catch(console.error);

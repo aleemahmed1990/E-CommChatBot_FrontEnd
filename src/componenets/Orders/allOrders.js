@@ -24,6 +24,9 @@ const OrderStatusFilters = [
   { id: "refund", label: "Refund", color: "#d3d3d3" },
   { id: "order-complete", label: "Order complete", color: "#86efac" },
   { id: "order not picked", label: "Awaiting pickup", color: "#c084fc" },
+  { id: "ready-to-pickup", label: "Ready to pickup", color: "#93c5fd" },
+  { id: "order-not-pickedup", label: "Not picked up", color: "#fca5a5" },
+  { id: "order-pickuped-up", label: "Picked up", color: "#bbf7d0" },
 ];
 
 export default function AllOrders() {
@@ -35,47 +38,67 @@ export default function AllOrders() {
   const itemsPerPage = 10;
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
-      // build query params
+      setLoading(true);
+      setError(null);
+
+      // Build query params
       const params = new URLSearchParams();
-      if (selectedFilters.length)
+      if (selectedFilters.length) {
         params.set("status", selectedFilters.join(","));
-      if (searchQuery) params.set("search", searchQuery);
+      }
+      if (searchQuery) {
+        params.set("search", searchQuery);
+      }
       params.set("page", currentPage);
       params.set("limit", itemsPerPage);
 
+      console.log("=== FRONTEND FETCHING ORDERS ===");
+      console.log("URL:", `http://localhost:5000/api/orders?${params}`);
+      console.log("Filters:", selectedFilters);
+      console.log("Search:", searchQuery);
+      console.log("Page:", currentPage);
+
       try {
-        // fetch list of orders
-        const listRes = await axios.get(
-          `https://married-flower-fern.glitch.me/api/orders?${params}`
-        );
-        const { orders: listOrders, total: listTotal } = listRes.data;
-
-        // enrich each order with customer name if missing
-        const enriched = await Promise.all(
-          listOrders.map(async (o) => {
-            if (!o.customer) {
-              try {
-                const detailRes = await axios.get(
-                  `https://married-flower-fern.glitch.me/api/orders/${o.orderId}`
-                );
-                return { ...o, customer: detailRes.data.customer || "N/A" };
-              } catch (err) {
-                return { ...o, customer: "N/A" };
-              }
-            }
-            return o;
-          })
+        // Fetch list of orders from the orders router
+        const response = await axios.get(
+          `http://localhost:5000/api/orders?${params}`
         );
 
-        setOrders(enriched);
-        setTotal(typeof listTotal === "number" ? listTotal : 0);
+        console.log("=== API RESPONSE ===");
+        console.log("Response status:", response.status);
+        console.log("Response data:", response.data);
+
+        const { orders: fetchedOrders = [], total: fetchedTotal = 0 } =
+          response.data;
+
+        console.log("=== PROCESSED DATA ===");
+        console.log("Orders count:", fetchedOrders.length);
+        console.log("Total:", fetchedTotal);
+
+        if (fetchedOrders.length > 0) {
+          console.log("Sample order:", fetchedOrders[0]);
+        }
+
+        // The orders should already have customer info from the enhanced router
+        setOrders(fetchedOrders);
+        setTotal(typeof fetchedTotal === "number" ? fetchedTotal : 0);
       } catch (e) {
-        console.error("Fetch failed", e);
+        console.error("=== FETCH ERROR ===", e);
+        console.error("Error response:", e.response?.data);
+        console.error("Error status:", e.response?.status);
+
+        setError(
+          `Failed to fetch orders: ${e.response?.data?.message || e.message}`
+        );
         setOrders([]);
         setTotal(0);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -87,6 +110,15 @@ export default function AllOrders() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
     setCurrentPage(1);
+  };
+
+  const getStatusInfo = (status) => {
+    return (
+      OrderStatusFilters.find((f) => f.id === status) || {
+        label: status,
+        color: "#gray-400",
+      }
+    );
   };
 
   return (
@@ -106,13 +138,16 @@ export default function AllOrders() {
           <h1 className="text-xl font-semibold">3. All Orders</h1>
         </div>
 
+        {/* Status Filters */}
         <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
           {OrderStatusFilters.map((f) => (
             <div
               key={f.id}
               onClick={() => toggleFilter(f.id)}
-              className={`cursor-pointer flex items-center px-2 py-1 rounded text-sm ${
-                selectedFilters.includes(f.id) ? "ring-2 ring-green-500" : ""
+              className={`cursor-pointer flex items-center px-2 py-1 rounded text-sm transition-all ${
+                selectedFilters.includes(f.id)
+                  ? "ring-2 ring-green-500 shadow-md"
+                  : ""
               }`}
               style={{ backgroundColor: f.color }}
             >
@@ -127,129 +162,270 @@ export default function AllOrders() {
           ))}
         </div>
 
+        {/* Search and Controls */}
         <div className="flex space-x-4 mb-4">
           <input
             type="text"
             placeholder="Search by order id"
-            className="flex-1 border px-3 py-2 rounded focus:outline-none"
+            className="flex-1 border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1); // Reset to first page when searching
+            }}
           />
-          <button className="flex items-center px-3 py-2 border rounded">
+          <button className="flex items-center px-3 py-2 border rounded hover:bg-gray-50">
             <Filter className="mr-2" size={16} />
             <span>Select dates</span>
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {[
-                  "Order ID",
-                  "Created",
-                  "Customer",
-                  "Total",
-                  "Status",
-                  "Actions",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => (
-                <React.Fragment key={o.orderId}>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm">{o.orderId}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {new Date(o.created).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 text-sm">{o.customer}</td>
-                    <td className="px-6 py-4 text-sm">{o.totalAmount}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className="px-3 py-1 rounded-full text-sm"
-                        style={{
-                          backgroundColor: OrderStatusFilters.find(
-                            (f) => f.id === o.status
-                          )?.color,
-                        }}
-                      >
-                        {OrderStatusFilters.find((f) => f.id === o.status)
-                          ?.label || o.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() =>
-                          setExpandedOrderId(
-                            expandedOrderId === o.orderId ? null : o.orderId
-                          )
-                        }
-                      >
-                        ▶
-                      </button>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="text-gray-500">Loading orders...</div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+
+        {/* Orders Table */}
+        {!loading && !error && (
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  {[
+                    "Order ID",
+                    "Created",
+                    "Customer",
+                    "Phone",
+                    "Total",
+                    "Status",
+                    "Actions",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {orders.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-6 py-4 text-center text-gray-500"
+                    >
+                      No orders found.
                     </td>
                   </tr>
-                  {expandedOrderId === o.orderId && (
-                    <tr className="bg-gray-50">
-                      <td colSpan={6} className="px-6 py-4">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr>
-                              <th className="py-2 text-left">#</th>
-                              <th className="py-2 text-left">Product</th>
-                              <th className="py-2 text-left">Qty</th>
-                              <th className="py-2 text-left">Unit Price</th>
-                              <th className="py-2 text-left">Line Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {o.items.map((item, i) => (
-                              <tr key={i} className="border-t">
-                                <td className="py-2">{i + 1}</td>
-                                <td>{item.productName}</td>
-                                <td>{item.quantity}</td>
-                                <td>{item.price}</td>
-                                <td>{item.totalPrice}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  orders.map((o) => (
+                    <React.Fragment key={o.orderId}>
+                      <tr className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          {o.orderId}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {new Date(o.created || o.orderDate).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {o.customer || o.customerName || "N/A"}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {o.phoneNumber || o.customerPhone || "N/A"}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          ${o.totalAmount}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col gap-1">
+                            {/* Main Status */}
+                            <span
+                              className="px-3 py-1 rounded-full text-xs font-medium"
+                              style={{
+                                backgroundColor: getStatusInfo(o.status).color,
+                                color: "#000",
+                              }}
+                            >
+                              {getStatusInfo(o.status).label}
+                            </span>
 
-        <div className="flex justify-between items-center mt-4">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 border rounded"
-          >
-            Previous
-          </button>
-          <span>
-            Page {currentPage} of {Math.ceil(total / itemsPerPage)}
-          </span>
-          <button
-            onClick={() => setCurrentPage((p) => p + 1)}
-            disabled={currentPage * itemsPerPage >= total}
-            className="px-3 py-1 border rounded"
-          >
-            Next
-          </button>
-        </div>
+                            {/* Current Order Status (if different) */}
+                            {o.currentOrderStatus &&
+                              o.currentOrderStatus !== o.status && (
+                                <span
+                                  className="px-3 py-1 rounded-full text-xs font-medium"
+                                  style={{
+                                    backgroundColor: getStatusInfo(
+                                      o.currentOrderStatus
+                                    ).color,
+                                    color: "#000",
+                                  }}
+                                >
+                                  {getStatusInfo(o.currentOrderStatus).label}
+                                </span>
+                              )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() =>
+                              setExpandedOrderId(
+                                expandedOrderId === o.orderId ? null : o.orderId
+                              )
+                            }
+                            className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                          >
+                            {expandedOrderId === o.orderId ? "▼" : "▶"}
+                          </button>
+                        </td>
+                      </tr>
+                      {expandedOrderId === o.orderId && (
+                        <tr className="bg-gray-50">
+                          <td colSpan={7} className="px-6 py-4">
+                            <div className="space-y-4">
+                              {/* Order Details */}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                  <span className="font-medium text-gray-700">
+                                    Customer ID:
+                                  </span>
+                                  <span className="ml-2">{o.customerId}</span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-700">
+                                    Payment Method:
+                                  </span>
+                                  <span className="ml-2">
+                                    {o.paymentMethod || "N/A"}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-700">
+                                    Payment Status:
+                                  </span>
+                                  <span className="ml-2">
+                                    {o.paymentStatus || "N/A"}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-700">
+                                    Delivery Charge:
+                                  </span>
+                                  <span className="ml-2">
+                                    ${o.deliveryCharge || 0}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Items Table */}
+                              <div>
+                                <h4 className="font-medium text-gray-900 mb-2">
+                                  Order Items
+                                </h4>
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="border-b">
+                                      <th className="py-2 text-left">#</th>
+                                      <th className="py-2 text-left">
+                                        Product
+                                      </th>
+                                      <th className="py-2 text-left">Qty</th>
+                                      <th className="py-2 text-left">
+                                        Unit Price
+                                      </th>
+                                      <th className="py-2 text-left">
+                                        Line Total
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {(o.items || []).map((item, i) => (
+                                      <tr key={i} className="border-b">
+                                        <td className="py-2">{i + 1}</td>
+                                        <td className="py-2">
+                                          {item.productName}
+                                        </td>
+                                        <td className="py-2">
+                                          {item.quantity}
+                                        </td>
+                                        <td className="py-2">${item.price}</td>
+                                        <td className="py-2">
+                                          ${item.totalPrice}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+
+                              {/* Delivery Address */}
+                              {o.deliveryAddress && (
+                                <div>
+                                  <span className="font-medium text-gray-700">
+                                    Delivery Address:
+                                  </span>
+                                  <span className="ml-2">
+                                    {typeof o.deliveryAddress === "object"
+                                      ? `${o.deliveryAddress.street || ""} ${
+                                          o.deliveryAddress.area || ""
+                                        } ${
+                                          o.deliveryAddress.city || ""
+                                        }`.trim()
+                                      : o.deliveryAddress}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && !error && total > 0 && (
+          <div className="flex justify-between items-center mt-4 bg-white px-4 py-3 border-t border-gray-200">
+            <div className="text-sm text-gray-700">
+              Showing {(currentPage - 1) * itemsPerPage + 1}–
+              {Math.min(currentPage * itemsPerPage, total)} of {total} orders
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-sm">
+                Page {currentPage} of {Math.ceil(total / itemsPerPage)}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => p + 1)}
+                disabled={currentPage * itemsPerPage >= total}
+                className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

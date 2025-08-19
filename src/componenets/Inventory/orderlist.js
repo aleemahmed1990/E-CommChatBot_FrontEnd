@@ -70,9 +70,7 @@ const OrderListApprovedStock = () => {
       console.log("🔍 Fetching all products to extract orderStock arrays...");
 
       // ✅ Use the SAME API URL as OutOfStock component
-      const response = await fetch(
-        "https://married-flower-fern.glitch.me/api/products"
-      );
+      const response = await fetch("http://localhost:5000/api/products");
 
       if (!response.ok) {
         throw new Error("Failed to fetch products");
@@ -197,7 +195,7 @@ const OrderListApprovedStock = () => {
 
       // ✅ Use the SAME API URL pattern as OutOfStock component
       const response = await fetch(
-        `https://married-flower-fern.glitch.me/api/products/${order.productDbId}/order/${order._id}/status`,
+        `http://localhost:5000/api/products/${order.productDbId}/order/${order._id}/status`,
         {
           method: "PATCH",
           headers: {
@@ -277,7 +275,7 @@ const OrderListApprovedStock = () => {
 
       // Try the specific order quantity update endpoint
       const response = await fetch(
-        `https://married-flower-fern.glitch.me/api/products/${order.productDbId}/order/${order._id}/update-quantity`,
+        `http://localhost:5000/api/products/${order.productDbId}/order/${order._id}/update-quantity`,
         {
           method: "PATCH",
           headers: {
@@ -353,7 +351,7 @@ const OrderListApprovedStock = () => {
       }));
 
       let response = await fetch(
-        "https://married-flower-fern.glitch.me/api/products/bulk-confirm-orders",
+        "http://localhost:5000/api/products/bulk-confirm-orders",
         {
           method: "PATCH",
           headers: {
@@ -407,7 +405,7 @@ const OrderListApprovedStock = () => {
       for (const order of orderPlacedOrders) {
         try {
           const individualResponse = await fetch(
-            `https://married-flower-fern.glitch.me/api/products/${order.productDbId}/order/${order._id}/status`,
+            `http://localhost:5000/api/products/${order.productDbId}/order/${order._id}/status`,
             {
               method: "PATCH",
               headers: {
@@ -480,7 +478,7 @@ const OrderListApprovedStock = () => {
       console.log(`🗑️ Removing order ${order._id} from order list...`);
 
       const response = await fetch(
-        `https://married-flower-fern.glitch.me/api/products/${order.productDbId}/order/${order._id}`,
+        `http://localhost:5000/api/products/${order.productDbId}/order/${order._id}`,
         {
           method: "DELETE",
           headers: {

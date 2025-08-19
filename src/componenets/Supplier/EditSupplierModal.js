@@ -91,19 +91,19 @@ const EditSupplierModal = ({ supplier, onClose }) => {
 
   const [previewUrls, setPreviewUrls] = useState({
     profilePicture: supplier.profilePicture
-      ? `https://ultra-inquisitive-oatmeal.glitch.me${supplier.profilePicture}`
+      ? `https://married-flower-fern.glitch.me${supplier.profilePicture}`
       : null,
     idCardFront: supplier.idCardFront
-      ? `https://ultra-inquisitive-oatmeal.glitch.me${supplier.idCardFront}`
+      ? `https://married-flower-fern.glitch.me${supplier.idCardFront}`
       : null,
     idCardBack: supplier.idCardBack
-      ? `https://ultra-inquisitive-oatmeal.glitch.me${supplier.idCardBack}`
+      ? `https://married-flower-fern.glitch.me${supplier.idCardBack}`
       : null,
     passportFront: supplier.passportFront
-      ? `https://ultra-inquisitive-oatmeal.glitch.me${supplier.passportFront}`
+      ? `https://married-flower-fern.glitch.me${supplier.passportFront}`
       : null,
     passportBack: supplier.passportBack
-      ? `https://ultra-inquisitive-oatmeal.glitch.me${supplier.passportBack}`
+      ? `https://married-flower-fern.glitch.me${supplier.passportBack}`
       : null,
   });
 
@@ -271,7 +271,7 @@ const EditSupplierModal = ({ supplier, onClose }) => {
     // Revoke object URL to avoid memory leaks if it's a new file
     if (
       previewUrls[name] &&
-      !previewUrls[name].includes("https://ultra-inquisitive-oatmeal.glitch.me")
+      !previewUrls[name].includes("https://married-flower-fern.glitch.me")
     ) {
       URL.revokeObjectURL(previewUrls[name]);
     }
@@ -282,7 +282,7 @@ const EditSupplierModal = ({ supplier, onClose }) => {
     // For existing server images, we need to track that we want to remove them
     if (
       previewUrls[name] &&
-      previewUrls[name].includes("https://ultra-inquisitive-oatmeal.glitch.me")
+      previewUrls[name].includes("https://married-flower-fern.glitch.me")
     ) {
       setFormData((prev) => ({
         ...prev,
@@ -439,7 +439,7 @@ const EditSupplierModal = ({ supplier, onClose }) => {
         submitData.append("passportBack", formData.passportBack);
 
       const response = await fetch(
-        `https://ultra-inquisitive-oatmeal.glitch.me/api/suppliers/${supplier._id}`,
+        `https://married-flower-fern.glitch.me/api/suppliers/${supplier._id}`,
         {
           method: "PUT",
           body: submitData,

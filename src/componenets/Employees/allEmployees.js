@@ -30,9 +30,7 @@ const AllEmployees = () => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          "https://married-flower-fern.glitch.me/api/employees"
-        );
+        const response = await axios.get("http://localhost:5000/api/employees");
         setEmployees(response.data.data);
         setTotalItems(response.data.count);
         setLoading(false);

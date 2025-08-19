@@ -56,16 +56,13 @@ export default function OrderManagementPickup() {
       ].join(",");
 
       // 1. Get the raw orders from all relevant statuses
-      const { data } = await axios.get(
-        "https://married-flower-fern.glitch.me/api/orders",
-        {
-          params: {
-            status: statuses,
-            deliveryType: "self_pickup",
-            limit: 100,
-          },
-        }
-      );
+      const { data } = await axios.get("http://localhost:5000/api/orders", {
+        params: {
+          status: statuses,
+          deliveryType: "self_pickup",
+          limit: 100,
+        },
+      });
 
       // 2. Enrich each order with a cleaned phone number & proper customer name
       const ordersWithPhones = await Promise.all(
@@ -75,7 +72,7 @@ export default function OrderManagementPickup() {
 
           try {
             const res = await axios.get(
-              `https://married-flower-fern.glitch.me/api/orders/${order.orderId}/phone`
+              `http://localhost:5000/api/orders/${order.orderId}/phone`
             );
             phoneNumber = res.data.phoneNumber;
             name = res.data.name;
@@ -128,12 +125,9 @@ export default function OrderManagementPickup() {
   };
   const fetchDrivers = async () => {
     try {
-      const { data } = await axios.get(
-        "https://married-flower-fern.glitch.me/api/employees",
-        {
-          params: { employeeCategory: "Driver" },
-        }
-      );
+      const { data } = await axios.get("http://localhost:5000/api/employees", {
+        params: { employeeCategory: "Driver" },
+      });
       setDrivers(data.data || []);
     } catch (error) {
       console.error("Error fetching drivers:", error);
@@ -146,14 +140,11 @@ export default function OrderManagementPickup() {
       setLoading(true);
 
       // Mark order as allocated for pickup
-      await axios.put(
-        `https://married-flower-fern.glitch.me/api/orders/${orderId}/status`,
-        {
-          status: "order-confirmed",
-          pickupAllocated: true,
-          allocatedAt: new Date().toISOString(),
-        }
-      );
+      await axios.put(`http://localhost:5000/api/orders/${orderId}/status`, {
+        status: "order-confirmed",
+        pickupAllocated: true,
+        allocatedAt: new Date().toISOString(),
+      });
 
       // Move order from main list to allocated section
       const orderToMove = orders.find((order) => order.orderId === orderId);
@@ -186,7 +177,7 @@ export default function OrderManagementPickup() {
   const handlePickupStatus = async (orderId, statusKey) => {
     try {
       await axios.put(
-        `https://married-flower-fern.glitch.me/api/orders/${orderId}/pickup-status`,
+        `http://localhost:5000/api/orders/${orderId}/pickup-status`,
         { pickupStatus: statusKey } // This will now send the actual database status value
       );
 
@@ -217,12 +208,9 @@ export default function OrderManagementPickup() {
   const handleReadyForPickup = async (orderId) => {
     try {
       // 1) tell the backend it's ready
-      await axios.put(
-        `https://married-flower-fern.glitch.me/api/orders/${orderId}/status`,
-        {
-          status: "ready to pickup",
-        }
-      );
+      await axios.put(`http://localhost:5000/api/orders/${orderId}/status`, {
+        status: "ready to pickup",
+      });
 
       // 2) show a toast / banner
       setReadyMessage("Order ready to be picked up");

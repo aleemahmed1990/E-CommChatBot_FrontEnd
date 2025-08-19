@@ -43,7 +43,7 @@ const CustomerPage = () => {
       if (dateFilter.endDate) params.append("endDate", dateFilter.endDate);
 
       const response = await fetch(
-        `https://married-flower-fern.glitch.me/api/customers?${params}`
+        `http://localhost:5000/api/customers?${params}`
       );
       if (!response.ok) throw new Error("Failed to fetch customers");
 
@@ -104,7 +104,7 @@ const CustomerPage = () => {
 
     try {
       const response = await fetch(
-        `https://married-flower-fern.glitch.me/api/customers/${customerId}`,
+        `http://localhost:5000/api/customers/${customerId}`,
         {
           method: "DELETE",
         }
@@ -121,7 +121,7 @@ const CustomerPage = () => {
     e.stopPropagation();
     try {
       const response = await fetch(
-        `https://married-flower-fern.glitch.me/api/customers/${customerId}/unblock`,
+        `http://localhost:5000/api/customers/${customerId}/unblock`,
         {
           method: "PUT",
         }
