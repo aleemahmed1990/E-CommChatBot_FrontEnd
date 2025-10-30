@@ -50,7 +50,7 @@ export default function EnhancedForemanReferrals() {
     try {
       setLoading(true);
       const response = await fetch(
-        `http://localhost:5000/api/foreman-customers?status=${activeTab}`
+        `https://e-commchatbot-backend-4.onrender.com/api/foreman-customers?status=${activeTab}`
       );
       const data = await response.json();
 
@@ -69,7 +69,7 @@ export default function EnhancedForemanReferrals() {
   const fetchStats = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/api/foreman-customers/stats/overview"
+        "https://e-commchatbot-backend-4.onrender.com/api/foreman-customers/stats/overview"
       );
       const data = await response.json();
       if (data.success) {
@@ -84,7 +84,7 @@ export default function EnhancedForemanReferrals() {
     try {
       setUpdating(true);
       const response = await fetch(
-        "http://localhost:5000/api/foreman-customers/update-foreman-status",
+        "https://e-commchatbot-backend-4.onrender.com/api/foreman-customers/update-foreman-status",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -125,7 +125,7 @@ export default function EnhancedForemanReferrals() {
     try {
       setUpdating(true);
       const response = await fetch(
-        "http://localhost:5000/api/foreman-customers/update-commission-eligibility",
+        "https://e-commchatbot-backend-4.onrender.com/api/foreman-customers/update-commission-eligibility",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -165,7 +165,7 @@ export default function EnhancedForemanReferrals() {
     try {
       setUpdating(true);
       const response = await fetch(
-        "http://localhost:5000/api/foreman-customers/pay-commission",
+        "https://e-commchatbot-backend-4.onrender.com/api/foreman-customers/pay-commission",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -634,7 +634,7 @@ function CustomerDetailView({
   const fetchReferralDetails = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/foreman-customers/${customer._id}/referral-details`
+        `https://e-commchatbot-backend-4.onrender.com/api/foreman-customers/${customer._id}/referral-details`
       );
       const data = await response.json();
 

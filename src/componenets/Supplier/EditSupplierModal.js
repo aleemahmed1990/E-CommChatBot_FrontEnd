@@ -91,19 +91,19 @@ const EditSupplierModal = ({ supplier, onClose }) => {
 
   const [previewUrls, setPreviewUrls] = useState({
     profilePicture: supplier.profilePicture
-      ? `https://married-flower-fern.glitch.me${supplier.profilePicture}`
+      ? `https://e-commchatbot-backend-4.onrender.com${supplier.profilePicture}`
       : null,
     idCardFront: supplier.idCardFront
-      ? `https://married-flower-fern.glitch.me${supplier.idCardFront}`
+      ? `https://e-commchatbot-backend-4.onrender.com${supplier.idCardFront}`
       : null,
     idCardBack: supplier.idCardBack
-      ? `https://married-flower-fern.glitch.me${supplier.idCardBack}`
+      ? `https://e-commchatbot-backend-4.onrender.com${supplier.idCardBack}`
       : null,
     passportFront: supplier.passportFront
-      ? `https://married-flower-fern.glitch.me${supplier.passportFront}`
+      ? `https://e-commchatbot-backend-4.onrender.com${supplier.passportFront}`
       : null,
     passportBack: supplier.passportBack
-      ? `https://married-flower-fern.glitch.me${supplier.passportBack}`
+      ? `https://e-commchatbot-backend-4.onrender.com${supplier.passportBack}`
       : null,
   });
 
@@ -271,7 +271,9 @@ const EditSupplierModal = ({ supplier, onClose }) => {
     // Revoke object URL to avoid memory leaks if it's a new file
     if (
       previewUrls[name] &&
-      !previewUrls[name].includes("https://married-flower-fern.glitch.me")
+      !previewUrls[name].includes(
+        "https://e-commchatbot-backend-4.onrender.com"
+      )
     ) {
       URL.revokeObjectURL(previewUrls[name]);
     }
@@ -282,7 +284,7 @@ const EditSupplierModal = ({ supplier, onClose }) => {
     // For existing server images, we need to track that we want to remove them
     if (
       previewUrls[name] &&
-      previewUrls[name].includes("https://married-flower-fern.glitch.me")
+      previewUrls[name].includes("https://e-commchatbot-backend-4.onrender.com")
     ) {
       setFormData((prev) => ({
         ...prev,
@@ -439,7 +441,7 @@ const EditSupplierModal = ({ supplier, onClose }) => {
         submitData.append("passportBack", formData.passportBack);
 
       const response = await fetch(
-        `https://married-flower-fern.glitch.me/api/suppliers/${supplier._id}`,
+        `https://e-commchatbot-backend-4.onrender.com/api/suppliers/${supplier._id}`,
         {
           method: "PUT",
           body: submitData,

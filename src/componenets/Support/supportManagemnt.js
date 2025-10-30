@@ -81,7 +81,7 @@ const SupportManagement = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/support/dashboard"
+        "https://e-commchatbot-backend-4.onrender.com/api/support/dashboard"
       );
       setSupportData(response.data);
     } catch (error) {
@@ -94,7 +94,7 @@ const SupportManagement = () => {
   const handleStatusUpdate = async (ticketId, newStatus) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/support/tickets/${ticketId}/status`,
+        `https://e-commchatbot-backend-4.onrender.com/api/support/tickets/${ticketId}/status`,
         {
           status: newStatus,
         }
@@ -108,7 +108,7 @@ const SupportManagement = () => {
   const handlePriorityUpdate = async (ticketId, newPriority) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/support/tickets/${ticketId}/priority`,
+        `https://e-commchatbot-backend-4.onrender.com/api/support/tickets/${ticketId}/priority`,
         {
           priority: newPriority,
         }
@@ -128,7 +128,7 @@ const SupportManagement = () => {
   const handleDownloadMedia = async (mediaId, filename) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/support/media/${mediaId}/download`,
+        `https://e-commchatbot-backend-4.onrender.com/api/support/media/${mediaId}/download`,
         {
           responseType: "blob",
         }
@@ -154,7 +154,7 @@ const SupportManagement = () => {
   ) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/support/address-changes/${orderId}/update`,
+        `https://e-commchatbot-backend-4.onrender.com/api/support/address-changes/${orderId}/update`,
         {
           customerId: customerId,
           newAddress: newAddress,

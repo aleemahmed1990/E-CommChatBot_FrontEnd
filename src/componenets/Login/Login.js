@@ -25,7 +25,7 @@ const LoginComponent = ({ onLogin }) => {
   const [success, setSuccess] = useState("");
 
   // API base URL - Fixed to match your backend port
-  const API_BASE_URL = "http://localhost:5000";
+  const API_BASE_URL = "https://e-commchatbot-backend-4.onrender.com";
 
   // API call wrapper
   const apiCall = useCallback(

@@ -157,7 +157,7 @@ export default function ReferralData() {
     try {
       setLoading(true);
       const response = await fetch(
-        `http://localhost:5000/api/referral-data?customerType=${selectedCustomerType}&period=${selectedPeriod}&filter=${selectedFilter}`
+        `https://e-commchatbot-backend-4.onrender.com/api/referral-data?customerType=${selectedCustomerType}&period=${selectedPeriod}&filter=${selectedFilter}`
       );
       const data = await response.json();
 

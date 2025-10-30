@@ -16,7 +16,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://e-commchatbot-backend-4.onrender.com";
 
 const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
   const [storageQueue, setStorageQueue] = useState([]);

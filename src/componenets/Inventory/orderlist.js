@@ -70,7 +70,9 @@ const OrderListApprovedStock = () => {
       console.log("🔍 Fetching all products to extract orderStock arrays...");
 
       // ✅ Use the SAME API URL as OutOfStock component
-      const response = await fetch("http://localhost:5000/api/products");
+      const response = await fetch(
+        "https://e-commchatbot-backend-4.onrender.com/api/products"
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch products");
@@ -195,7 +197,7 @@ const OrderListApprovedStock = () => {
 
       // ✅ Use the SAME API URL pattern as OutOfStock component
       const response = await fetch(
-        `http://localhost:5000/api/products/${order.productDbId}/order/${order._id}/status`,
+        `https://e-commchatbot-backend-4.onrender.com/api/products/${order.productDbId}/order/${order._id}/status`,
         {
           method: "PATCH",
           headers: {
@@ -275,7 +277,7 @@ const OrderListApprovedStock = () => {
 
       // Try the specific order quantity update endpoint
       const response = await fetch(
-        `http://localhost:5000/api/products/${order.productDbId}/order/${order._id}/update-quantity`,
+        `https://e-commchatbot-backend-4.onrender.com/api/products/${order.productDbId}/order/${order._id}/update-quantity`,
         {
           method: "PATCH",
           headers: {
@@ -351,7 +353,7 @@ const OrderListApprovedStock = () => {
       }));
 
       let response = await fetch(
-        "http://localhost:5000/api/products/bulk-confirm-orders",
+        "https://e-commchatbot-backend-4.onrender.com/api/products/bulk-confirm-orders",
         {
           method: "PATCH",
           headers: {
@@ -405,7 +407,7 @@ const OrderListApprovedStock = () => {
       for (const order of orderPlacedOrders) {
         try {
           const individualResponse = await fetch(
-            `http://localhost:5000/api/products/${order.productDbId}/order/${order._id}/status`,
+            `https://e-commchatbot-backend-4.onrender.com/api/products/${order.productDbId}/order/${order._id}/status`,
             {
               method: "PATCH",
               headers: {
@@ -478,7 +480,7 @@ const OrderListApprovedStock = () => {
       console.log(`🗑️ Removing order ${order._id} from order list...`);
 
       const response = await fetch(
-        `http://localhost:5000/api/products/${order.productDbId}/order/${order._id}`,
+        `https://e-commchatbot-backend-4.onrender.com/api/products/${order.productDbId}/order/${order._id}`,
         {
           method: "DELETE",
           headers: {

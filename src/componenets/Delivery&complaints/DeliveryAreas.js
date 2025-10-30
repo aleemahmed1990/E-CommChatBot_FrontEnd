@@ -39,11 +39,14 @@ const AreasManagement = () => {
 
     try {
       // API call would go here
-      const response = await fetch("http://localhost:5000/api/areas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newArea),
-      });
+      const response = await fetch(
+        "https://e-commchatbot-backend-4.onrender.com/api/areas",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newArea),
+        }
+      );
 
       if (response.ok) {
         const addedArea = await response.json();
@@ -79,11 +82,14 @@ const AreasManagement = () => {
   const handleUpdateArea = async (id, updatedData) => {
     try {
       // API call would go here
-      const response = await fetch(`http://localhost:5000/api/areas/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedData),
-      });
+      const response = await fetch(
+        `https://e-commchatbot-backend-4.onrender.com/api/areas/${id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedData),
+        }
+      );
 
       if (response.ok) {
         const updatedArea = await response.json();
@@ -107,9 +113,12 @@ const AreasManagement = () => {
 
     try {
       // API call would go here
-      const response = await fetch(`http://localhost:5000/api/areas/${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `https://e-commchatbot-backend-4.onrender.com/api/areas/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (response.ok) {
         setAreas(areas.filter((area) => area._id !== id));

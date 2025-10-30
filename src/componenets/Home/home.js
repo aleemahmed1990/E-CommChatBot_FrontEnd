@@ -29,7 +29,7 @@ import {
 import ManageUsers from "../Home/userManagement";
 
 // API Configuration
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://e-commchatbot-backend-4.onrender.com";
 
 // Role definitions - keep for backward compatibility but not used for access control
 const ROLES = {
@@ -401,8 +401,8 @@ const COMPONENT_CATEGORIES = {
       {
         id: "159",
         number: "159.",
-         name: "Video sending",
-                 path: "/referral-demovideo",
+        name: "Video sending",
+        path: "/referral-demovideo",
       },
     ],
   },

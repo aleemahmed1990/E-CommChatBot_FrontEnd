@@ -27,7 +27,7 @@ const CustomerChatView = () => {
 
       // Fetch customer basic info
       const customerResponse = await fetch(
-        `http://localhost:5000/api/customers/${id}`
+        `https://e-commchatbot-backend-4.onrender.com/api/customers/${id}`
       );
       if (!customerResponse.ok)
         throw new Error("Failed to fetch customer details");
@@ -36,7 +36,7 @@ const CustomerChatView = () => {
 
       // Fetch chat history
       const chatResponse = await fetch(
-        `http://localhost:5000/api/customers/${id}/chat`
+        `https://e-commchatbot-backend-4.onrender.com/api/customers/${id}/chat`
       );
       if (!chatResponse.ok) throw new Error("Failed to fetch chat history");
       const chatData = await chatResponse.json();

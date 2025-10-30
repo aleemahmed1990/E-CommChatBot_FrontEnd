@@ -68,7 +68,7 @@ export default function DiscountedProductsInvA() {
       // Use dynamic URL based on network setup
       const baseURL =
         window.location.hostname === "localhost"
-          ? "http://localhost:5000"
+          ? "https://e-commchatbot-backend-4.onrender.com"
           : `http://${window.location.hostname}:5000`;
 
       console.log(

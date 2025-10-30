@@ -9,7 +9,7 @@ import {
   XCircle as XIcon,
 } from "lucide-react";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://e-commchatbot-backend-4.onrender.com";
 
 export default function AddCategory() {
   // --- State hooks ---

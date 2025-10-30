@@ -52,13 +52,16 @@ export default function ScooterDelivery() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("http://localhost:5000/api/orders", {
-        params: {
-          status: "order-confirmed",
-          deliveryType: "scooter", // Filter for scooter delivery orders
-          limit: 100,
-        },
-      });
+      const { data } = await axios.get(
+        "https://e-commchatbot-backend-4.onrender.com/api/orders",
+        {
+          params: {
+            status: "order-confirmed",
+            deliveryType: "scooter", // Filter for scooter delivery orders
+            limit: 100,
+          },
+        }
+      );
 
       // Separate orders: those without timeSlot go to main list, those with timeSlot go to allocated sections
       const mainOrders = [];
@@ -90,9 +93,12 @@ export default function ScooterDelivery() {
 
   const fetchDrivers = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5000/api/employees", {
-        params: { employeeCategory: "Driver" },
-      });
+      const { data } = await axios.get(
+        "https://e-commchatbot-backend-4.onrender.com/api/employees",
+        {
+          params: { employeeCategory: "Driver" },
+        }
+      );
       setDrivers(data.data || []);
     } catch (error) {
       console.error("Error fetching drivers:", error);
@@ -148,7 +154,7 @@ export default function ScooterDelivery() {
 
       // Allocate the order with time slot and drivers
       await axios.put(
-        `http://localhost:5000/api/orders/${activeTimeSlotOrder}/allocate`,
+        `https://e-commchatbot-backend-4.onrender.com/api/orders/${activeTimeSlotOrder}/allocate`,
         {
           timeSlot: selectedTimeSlot,
           driver1: selectedDriver1,
@@ -193,7 +199,7 @@ export default function ScooterDelivery() {
   const handleItemCheckboxChange = async (orderId, itemIndex, checked) => {
     try {
       const response = await axios.put(
-        `http://localhost:5000/api/orders/${orderId}/item-status`,
+        `https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}/item-status`,
         {
           itemIndex: itemIndex,
           onTruck: checked,

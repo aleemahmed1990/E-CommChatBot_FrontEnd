@@ -55,7 +55,8 @@ const IntroductionVideoManagement159B = () => {
     isActive: false,
   });
 
-  const API_BASE = "http://localhost:5000/api/videos/introduction";
+  const API_BASE =
+    "https://e-commchatbot-backend-4.onrender.com/api/videos/introduction";
 
   // Fetch videos
   useEffect(() => {

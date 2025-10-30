@@ -77,7 +77,9 @@ export default function CreateDiscount() {
     setIsSearching(true);
     try {
       // Try multiple possible endpoints
-      const possibleEndpoints = [`http://localhost:5000/api/products`];
+      const possibleEndpoints = [
+        `https://e-commchatbot-backend-4.onrender.com/api/products`,
+      ];
 
       let response;
       let data;
@@ -234,8 +236,8 @@ export default function CreateDiscount() {
 
       // Try multiple possible endpoints for creating discount
       const possibleEndpoints = [
-        `http://localhost:5000/api/products/${selectedProduct.id}/discount`,
-        `http://localhost:5000/api/products/${selectedProduct.id}`, // Fallback to regular update
+        `https://e-commchatbot-backend-4.onrender.com/api/products/${selectedProduct.id}/discount`,
+        `https://e-commchatbot-backend-4.onrender.com/api/products/${selectedProduct.id}`, // Fallback to regular update
       ];
 
       let response;

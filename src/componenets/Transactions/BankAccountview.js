@@ -17,7 +17,7 @@ export default function BankAccountView() {
   const [allocatedStatus, setAllocatedStatus] = useState("allocated");
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/orders/${orderId}`)
+    fetch(`https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}`)
       .then((r) => r.json())
       .then(setOrder)
       .catch(console.error);

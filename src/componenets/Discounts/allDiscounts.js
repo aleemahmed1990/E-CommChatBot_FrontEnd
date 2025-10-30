@@ -67,7 +67,7 @@ export default function AllDiscounts() {
       // Use dynamic URL based on your network setup
       const baseURL =
         window.location.hostname === "localhost"
-          ? "http://localhost:5000"
+          ? "https://e-commchatbot-backend-4.onrender.com"
           : `http://${window.location.hostname}:5000`;
 
       console.log(
@@ -271,7 +271,7 @@ export default function AllDiscounts() {
     try {
       const baseURL =
         window.location.hostname === "localhost"
-          ? "http://localhost:5000"
+          ? "https://e-commchatbot-backend-4.onrender.com"
           : `http://${window.location.hostname}:5000`;
 
       console.log(
@@ -343,7 +343,7 @@ export default function AllDiscounts() {
     try {
       const baseURL =
         window.location.hostname === "localhost"
-          ? "http://localhost:5000"
+          ? "https://e-commchatbot-backend-4.onrender.com"
           : `http://${window.location.hostname}:5000`;
 
       console.log("🗑️ Deleting discount for product:", productId);

@@ -103,7 +103,7 @@ export default function FillingInventory() {
       const possibleEndpoints = [
         "/api/products",
         "/api/product",
-        "http://localhost:5000/api/products",
+        "https://e-commchatbot-backend-4.onrender.com/api/products",
         "http://localhost:3001/api/products",
         "http://localhost:8000/api/products",
       ];
@@ -252,7 +252,7 @@ export default function FillingInventory() {
       const possibleEndpoints = [
         `/api/products/fill-inventory/${productId}`,
         `/api/product/fill-inventory/${productId}`,
-        `http://localhost:5000/api/products/fill-inventory/${productId}`,
+        `https://e-commchatbot-backend-4.onrender.com/api/products/fill-inventory/${productId}`,
         `http://localhost:3001/api/products/fill-inventory/${productId}`,
         `http://localhost:8000/api/products/fill-inventory/${productId}`,
       ];

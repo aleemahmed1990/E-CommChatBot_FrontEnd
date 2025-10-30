@@ -435,7 +435,7 @@ const SupplierProfile = () => {
 
       // Add content type header for multipart/form-data
       const response = await fetch(
-        "https://married-flower-fern.glitch.me/api/suppliers",
+        "https://e-commchatbot-backend-4.onrender.com/api/suppliers",
         {
           method: "POST",
           body: submitData,
@@ -507,7 +507,7 @@ const SupplierProfile = () => {
       if (formData.supplierId) {
         try {
           const response = await fetch(
-            `https://married-flower-fern.glitch.me/api/suppliers/${formData.supplierId}`
+            `https://e-commchatbot-backend-4.onrender.com/api/suppliers/${formData.supplierId}`
           );
 
           if (response.ok) {

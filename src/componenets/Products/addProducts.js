@@ -5,7 +5,7 @@ import { PlusIcon, XCircleIcon, SearchIcon, Save } from "lucide-react";
 import Sidebar from "../Sidebar/sidebar";
 import { toast } from "react-hot-toast";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://e-commchatbot-backend-4.onrender.com";
 
 const AddProduct = () => {
   // Product type state

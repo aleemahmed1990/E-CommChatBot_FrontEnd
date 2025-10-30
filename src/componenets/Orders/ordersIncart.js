@@ -28,7 +28,7 @@ export default function OrdersInCart() {
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
 
-    fetch(`http://localhost:5000/api/orders?${params}`)
+    fetch(`https://e-commchatbot-backend-4.onrender.com/api/orders?${params}`)
       .then((res) => res.json())
       .then(({ orders = [], total = 0 }) => {
         setOrders(orders);

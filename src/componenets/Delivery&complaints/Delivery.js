@@ -78,9 +78,12 @@ const DeliveryComponent = () => {
       if (selectedDriver1) params.driver1 = selectedDriver1;
       if (selectedDriver2) params.driver2 = selectedDriver2;
 
-      const { data } = await axios.get("http://localhost:5000/api/orders", {
-        params,
-      });
+      const { data } = await axios.get(
+        "https://e-commchatbot-backend-4.onrender.com/api/orders",
+        {
+          params,
+        }
+      );
 
       setOrders(data.orders || []);
     } catch (error) {
@@ -94,9 +97,12 @@ const DeliveryComponent = () => {
 
   const fetchDrivers = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5000/api/employees", {
-        params: { employeeCategory: "Driver" },
-      });
+      const { data } = await axios.get(
+        "https://e-commchatbot-backend-4.onrender.com/api/employees",
+        {
+          params: { employeeCategory: "Driver" },
+        }
+      );
       setDrivers(data.data || []);
     } catch (error) {
       console.error("Error fetching drivers:", error);
@@ -202,7 +208,7 @@ const DeliveryComponent = () => {
       };
 
       await axios.post(
-        `http://localhost:5000/api/orders/${selectedOrderId}/complaint`,
+        `https://e-commchatbot-backend-4.onrender.com/api/orders/${selectedOrderId}/complaint`,
         complaintData
       );
 

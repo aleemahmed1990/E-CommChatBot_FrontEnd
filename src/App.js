@@ -63,6 +63,13 @@ import IntroductionVideoManagement159B from "./componenets/Refferal/Introduction
 import SupportManagement from "./componenets/Support/supportManagemnt";
 import AreasManagement from "./componenets/Delivery&complaints/DeliveryAreas";
 import DeliveryManagementSystem from "./componenets/DeliverySystem/maindeliverysystem";
+import VendorManagementDashboard from "./componenets/VendorManagement/VendorManagemet";
+import AllOrdersComponent from "./componenets/VendorManagement/ordersDashboard";
+import AssignAreasToVendors from "./componenets/VendorManagement/assignAreas";
+import VendorPreOrderDashboard from "./componenets/VendorPreorder/vendor-preorder-main";
+import AssignPreOrderVendorAreas from "./componenets/VendorPreorder/assignpreordersareas";
+import AllpreOrdersComponent from "./componenets/VendorPreorder/allpreorder";
+import VideoManagementSystem from "./componenets/VideosManagement/videomanagement";
 
 function App() {
   return (
@@ -82,6 +89,14 @@ function App() {
           element={
             <>
               <AllOrders />
+            </>
+          }
+        />
+        <Route
+          path="/videos-management"
+          element={
+            <>
+              <VideoManagementSystem />
             </>
           }
         />
@@ -220,6 +235,55 @@ function App() {
             </>
           }
         />
+        <Route
+          path="/vendor-dashboard"
+          element={
+            <>
+              <VendorManagementDashboard />
+            </>
+          }
+        />
+        <Route
+          path="/vendor-orders"
+          element={
+            <>
+              <AllOrdersComponent />
+            </>
+          }
+        />
+        <Route
+          path="/assign-preorder-areas"
+          element={
+            <>
+              <AssignPreOrderVendorAreas />
+            </>
+          }
+        />
+        <Route
+          path="/assign-vendor-areas"
+          element={
+            <>
+              <AssignAreasToVendors />
+            </>
+          }
+        />
+        <Route
+          path="/vendor-preorders"
+          element={
+            <>
+              <AllpreOrdersComponent />
+            </>
+          }
+        />
+        <Route
+          path="/vendor-preorder-dashboard"
+          element={
+            <>
+              <VendorPreOrderDashboard />
+            </>
+          }
+        />
+
         <Route
           path="/Driver-chat"
           element={

@@ -29,7 +29,9 @@ const DeliveryManagementDashboard = () => {
   const fetchData = async (endpoint) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/${endpoint}`);
+      const response = await fetch(
+        `https://e-commchatbot-backend-4.onrender.com/api/${endpoint}`
+      );
       const data = await response.json();
       return data;
     } catch (error) {
@@ -47,8 +49,8 @@ const DeliveryManagementDashboard = () => {
       const method = item._id && item._id !== "new" ? "PUT" : "POST";
       const url =
         item._id && item._id !== "new"
-          ? `http://localhost:5000/api/${endpoint}/${item._id}`
-          : `http://localhost:5000/api/${endpoint}`;
+          ? `https://e-commchatbot-backend-4.onrender.com/api/${endpoint}/${item._id}`
+          : `https://e-commchatbot-backend-4.onrender.com/api/${endpoint}`;
 
       const response = await fetch(url, {
         method,
@@ -94,7 +96,7 @@ const DeliveryManagementDashboard = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:5000/api/${endpoint}/${id}`,
+        `https://e-commchatbot-backend-4.onrender.com/api/${endpoint}/${id}`,
         {
           method: "DELETE",
         }

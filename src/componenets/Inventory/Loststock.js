@@ -71,8 +71,8 @@ export default function LostStockManagement() {
       setLoading(true);
 
       const possibleEndpoints = [
-        "http://localhost:5000/api/products", // Try regular products endpoint first - should definitely have AmountStockmintoReorder
-        "http://localhost:5000/api/products/lost-stock/summary", // Then try lost-stock summary
+        "https://e-commchatbot-backend-4.onrender.com/api/products", // Try regular products endpoint first - should definitely have AmountStockmintoReorder
+        "https://e-commchatbot-backend-4.onrender.com/api/products/lost-stock/summary", // Then try lost-stock summary
         "/api/products", // Relative path backups
         "/api/products/lost-stock/summary",
         "/api/product/lost-stock/summary",
@@ -262,7 +262,7 @@ export default function LostStockManagement() {
 
     try {
       const possibleEndpoints = [
-        `http://localhost:5000/api/products/update-lost-stock/${productId}`, // Primary port 5000
+        `https://e-commchatbot-backend-4.onrender.com/api/products/update-lost-stock/${productId}`, // Primary port 5000
         `/api/products/update-lost-stock/${productId}`, // Relative path backup
         `/api/product/update-lost-stock/${productId}`,
       ];

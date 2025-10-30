@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 // API Configuration
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://e-commchatbot-backend-4.onrender.com";
 
 // Helper function to safely get display name
 const getDisplayName = (nameField) => {

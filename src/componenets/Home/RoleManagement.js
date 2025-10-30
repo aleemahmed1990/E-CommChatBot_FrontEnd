@@ -68,7 +68,7 @@ const PermissionsManager = ({ onNavigateBack, currentUser }) => {
     priority: 0,
   });
 
-  const API_BASE_URL = "http://localhost:5000";
+  const API_BASE_URL = "https://e-commchatbot-backend-4.onrender.com";
 
   // API helper function - matching login component structure
   const apiCall = useCallback(async (endpoint, options = {}) => {

@@ -78,7 +78,7 @@ export default function OrderDetails() {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://localhost:5000/api/orders/${orderId}`
+        `https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}`
       );
       setOrderData(response.data);
 
@@ -152,10 +152,13 @@ export default function OrderDetails() {
   const updateOrderStatus = async (newStatus, reason = "") => {
     try {
       setUpdatingStatus(true);
-      await axios.put(`http://localhost:5000/api/orders/${orderId}/status`, {
-        status: newStatus,
-        reason: reason,
-      });
+      await axios.put(
+        `https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}/status`,
+        {
+          status: newStatus,
+          reason: reason,
+        }
+      );
 
       // Refresh order data
       fetchOrderDetails();

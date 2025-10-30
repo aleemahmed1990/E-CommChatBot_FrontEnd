@@ -24,7 +24,7 @@ import {
   CreditCard,
 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://e-commchatbot-backend-4.onrender.com";
 
 const OrderOverviewDashboard = ({ selectedRole, setSelectedRole }) => {
   const [orders, setOrders] = useState([]);
@@ -233,9 +233,9 @@ const OrderOverviewDashboard = ({ selectedRole, setSelectedRole }) => {
       case "HIGH":
         return "bg-red-500 text-white";
       case "MEDIUM":
-        return "bg-gray-800 text-white";
+        return "bg-yellow-500 text-white";
       case "LOW":
-        return "bg-gray-400 text-white";
+        return "bg-green-500 text-white";
       default:
         return "bg-gray-300 text-gray-700";
     }
@@ -244,19 +244,19 @@ const OrderOverviewDashboard = ({ selectedRole, setSelectedRole }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case "In Transit":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 text-blue-800 border border-blue-200";
       case "Loaded":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 text-green-800 border border-green-200";
       case "Assigned":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-100 text-purple-800 border border-purple-200";
       case "Packing":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 text-yellow-800 border border-yellow-200";
       case "Pending":
-        return "bg-orange-100 text-orange-800";
+        return "bg-orange-100 text-orange-800 border border-orange-200";
       case "Delivered":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 text-green-800 border border-green-200";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 border border-gray-200";
     }
   };
 
@@ -574,7 +574,7 @@ const OrderOverviewDashboard = ({ selectedRole, setSelectedRole }) => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900">
                 Orders Overview ({orders.length} orders)
@@ -591,192 +591,240 @@ const OrderOverviewDashboard = ({ selectedRole, setSelectedRole }) => {
                 <p className="mt-2 text-gray-600">Loading orders...</p>
               </div>
             ) : (
-              <>
-                <div className="grid grid-cols-15 gap-2 px-6 py-3 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                  <div className="col-span-2">Schedule & Priority</div>
-                  <div className="col-span-2">Status & Progress</div>
-                  <div className="col-span-2">Customer</div>
-                  <div className="col-span-2">Order Details</div>
-                  <div>Pending</div>
-                  <div>Packed</div>
-                  <div>Storage</div>
-                  <div>Assigned</div>
-                  <div>Loaded</div>
-                  <div>In Transit</div>
-                  <div>Delivered</div>
-                  <div>Actions</div>
-                </div>
-
-                <div className="divide-y divide-gray-200">
-                  {orders.map((order, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50"
-                    >
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {order.id}
-                        </div>
-                        <div className="flex items-center text-sm text-green-600 mt-1">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {order.location} • {order.items}
-                        </div>
-                        <div className="text-sm font-medium text-gray-900 mt-1">
-                          {order.amount}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {order.customer}
-                        </div>
-                        {isOverdue(order.schedule) && (
-                          <div className="text-xs text-red-500 mt-1">
-                            Overdue
-                          </div>
-                        )}
-                        <span
-                          className={`inline-block px-2 py-1 text-xs font-medium rounded mt-1 ${getPriorityColor(
-                            order.priority
-                          )}`}
-                        >
-                          {order.priority}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span
-                          className={`inline-block px-2 py-1 text-xs font-medium rounded ${getStatusColor(
-                            order.status
-                          )}`}
-                        >
-                          {order.status}
-                        </span>
-                        {order.officer && (
-                          <div className="text-xs text-gray-600 mt-1">
-                            Driver: {order.officer}
-                          </div>
-                        )}
-                        {order.hasComplaints && (
-                          <div className="flex items-center text-xs text-orange-600 mt-1">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Has Complaints
-                          </div>
-                        )}
-                        {order.specialInstructions && (
-                          <div className="flex items-center text-xs text-blue-600 mt-1">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Special Instructions
-                          </div>
-                        )}
-                      </div>
-
-                      {/* NEW: Customer Column */}
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {order.customerDetails?.name || order.customer}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600 mt-1">
-                          <Phone className="h-3 w-3 mr-1" />
-                          {order.customerDetails?.phone || order.phone}
-                        </div>
-                        {order.customerDetails?.email && (
-                          <div className="flex items-center text-sm text-gray-600 mt-1">
-                            <Mail className="h-3 w-3 mr-1" />
-                            {order.customerDetails.email}
-                          </div>
-                        )}
-                        <div className="text-xs text-gray-500 mt-1">
-                          Since:{" "}
-                          {order.customerDetails?.customerSince || "Unknown"}
-                        </div>
-                      </div>
-
-                      {/* NEW: Order Details Column */}
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {order.orderDetails?.orderId || order.id}
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          {order.orderDetails?.orderDate || "Unknown"}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {order.orderDetails?.itemCount || 0} items
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600 mt-1">
-                          <CreditCard className="h-3 w-3 mr-1" />
-                          {order.orderDetails?.paymentStatus || "pending"}
-                        </div>
-                      </div>
-
-                      {/* Workflow Progress Columns */}
-                      <div className="flex justify-center">
-                        {order.progress?.pending ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <Clock className="h-5 w-5 text-gray-300" />
-                        )}
-                      </div>
-                      <div className="flex justify-center">
-                        {order.progress?.packed ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <Clock className="h-5 w-5 text-gray-300" />
-                        )}
-                      </div>
-                      <div className="flex justify-center">
-                        {order.progress?.storage ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <Clock className="h-5 w-5 text-gray-300" />
-                        )}
-                      </div>
-                      <div className="flex justify-center">
-                        {order.progress?.assigned ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <Clock className="h-5 w-5 text-gray-300" />
-                        )}
-                      </div>
-                      <div className="flex justify-center">
-                        {order.progress?.loaded ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <Clock className="h-5 w-5 text-gray-300" />
-                        )}
-                      </div>
-                      <div className="flex justify-center">
-                        {order.progress?.inTransit ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <Clock className="h-5 w-5 text-gray-300" />
-                        )}
-                      </div>
-                      <div className="flex justify-center">
-                        {order.progress?.delivered ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <Clock className="h-5 w-5 text-gray-300" />
-                        )}
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => fetchOrderDetails(order.id)}
-                          className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                          title="View Details"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => sendWhatsAppMessage(order.id)}
-                          className="p-1 text-green-600 hover:bg-green-100 rounded"
-                          title="WhatsApp Customer"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                        </button>
-                      </div>
+              <div className="overflow-x-auto">
+                <div className="min-w-[1200px]">
+                  {/* Header Row */}
+                  <div className="bg-gray-50 border-b border-gray-200">
+                    <div className="grid grid-cols-11 gap-4 px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <div className="col-span-2">Schedule & Priority</div>
+                      <div className="col-span-2">Status & Progress</div>
+                      <div className="col-span-2">Customer</div>
+                      <div className="col-span-2">Order Details</div>
+                      <div className="text-center">Pending</div>
+                      <div className="text-center">Packed</div>
+                      <div className="text-center">Storage</div>
                     </div>
-                  ))}
+                    <div className="grid grid-cols-11 gap-4 px-6 pb-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <div className="col-span-8"></div>
+                      <div className="text-center">Assigned</div>
+                      <div className="text-center">Loaded</div>
+                      <div className="text-center">In Transit</div>
+                    </div>
+                    <div className="grid grid-cols-11 gap-4 px-6 pb-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <div className="col-span-8"></div>
+                      <div className="text-center">Delivered</div>
+                      <div className="text-center">Actions</div>
+                      <div></div>
+                    </div>
+                  </div>
+
+                  {/* Data Rows */}
+                  <div className="divide-y divide-gray-200">
+                    {orders.map((order, index) => (
+                      <div
+                        key={index}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="grid grid-cols-11 gap-4 px-6 py-4">
+                          {/* Schedule & Priority */}
+                          <div className="col-span-2">
+                            <div className="font-medium text-gray-900 text-sm">
+                              {order.id}
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600 mt-1">
+                              <MapPin className="h-3 w-3 mr-1" />
+                              {order.location}
+                            </div>
+                            <div className="text-sm font-medium text-green-600 mt-1">
+                              {order.amount}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {order.items}
+                            </div>
+                            {isOverdue(order.schedule) && (
+                              <div className="text-xs text-red-500 mt-1 font-medium">
+                                Overdue
+                              </div>
+                            )}
+                            <span
+                              className={`inline-block px-2 py-1 text-xs font-medium rounded mt-2 ${getPriorityColor(
+                                order.priority
+                              )}`}
+                            >
+                              {order.priority}
+                            </span>
+                          </div>
+
+                          {/* Status & Progress */}
+                          <div className="col-span-2">
+                            <span
+                              className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                                order.status
+                              )}`}
+                            >
+                              {order.status}
+                            </span>
+                            {order.officer && (
+                              <div className="text-xs text-gray-600 mt-2">
+                                <span className="font-medium">Driver:</span>{" "}
+                                {order.officer}
+                              </div>
+                            )}
+                            {order.hasComplaints && (
+                              <div className="flex items-center text-xs text-red-600 mt-1">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                Has Complaints
+                              </div>
+                            )}
+                            {order.specialInstructions && (
+                              <div className="flex items-center text-xs text-blue-600 mt-1">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                Special Instructions
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Customer */}
+                          <div className="col-span-2">
+                            <div className="font-medium text-gray-900 text-sm">
+                              {order.customerDetails?.name || order.customer}
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600 mt-1">
+                              <Phone className="h-3 w-3 mr-1" />
+                              {order.customerDetails?.phone || order.phone}
+                            </div>
+                            {order.customerDetails?.email && (
+                              <div className="flex items-center text-sm text-gray-600 mt-1">
+                                <Mail className="h-3 w-3 mr-1" />
+                                {order.customerDetails.email.length > 20
+                                  ? order.customerDetails.email.substring(
+                                      0,
+                                      20
+                                    ) + "..."
+                                  : order.customerDetails.email}
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-500 mt-1">
+                              Since:{" "}
+                              {order.customerDetails?.customerSince ||
+                                "Unknown"}
+                            </div>
+                          </div>
+
+                          {/* Order Details */}
+                          <div className="col-span-2">
+                            <div className="font-medium text-gray-900 text-sm">
+                              {order.orderDetails?.orderId || order.id}
+                            </div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              {order.orderDetails?.orderDate || "Unknown"}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {order.orderDetails?.itemCount || 0} items
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600 mt-1">
+                              <CreditCard className="h-3 w-3 mr-1" />
+                              {order.orderDetails?.paymentStatus || "pending"}
+                            </div>
+                          </div>
+
+                          {/* Workflow Progress Icons */}
+                          <div className="flex justify-center items-center">
+                            {order.progress?.pending ? (
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <Clock className="h-5 w-5 text-gray-300" />
+                            )}
+                          </div>
+                          <div className="flex justify-center items-center">
+                            {order.progress?.packed ? (
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <Clock className="h-5 w-5 text-gray-300" />
+                            )}
+                          </div>
+                          <div className="flex justify-center items-center">
+                            {order.progress?.storage ? (
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <Clock className="h-5 w-5 text-gray-300" />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Second Row for remaining workflow steps */}
+                        <div className="grid grid-cols-11 gap-4 px-6 pb-2">
+                          <div className="col-span-8"></div>
+                          <div className="flex justify-center items-center">
+                            {order.progress?.assigned ? (
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <Clock className="h-5 w-5 text-gray-300" />
+                            )}
+                          </div>
+                          <div className="flex justify-center items-center">
+                            {order.progress?.loaded ? (
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <Clock className="h-5 w-5 text-gray-300" />
+                            )}
+                          </div>
+                          <div className="flex justify-center items-center">
+                            {order.progress?.inTransit ? (
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <Clock className="h-5 w-5 text-gray-300" />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Third Row for final steps */}
+                        <div className="grid grid-cols-11 gap-4 px-6 pb-4">
+                          <div className="col-span-8"></div>
+                          <div className="flex justify-center items-center">
+                            {order.progress?.delivered ? (
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <Clock className="h-5 w-5 text-gray-300" />
+                            )}
+                          </div>
+                          {/* Actions */}
+                          <div className="flex items-center justify-center space-x-2">
+                            <button
+                              onClick={() => fetchOrderDetails(order.id)}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-full transition-colors"
+                              title="View Details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => sendWhatsAppMessage(order.id)}
+                              className="p-2 text-green-600 hover:bg-green-100 rounded-full transition-colors"
+                              title="WhatsApp Customer"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <div></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </>
+
+                {/* No orders message */}
+                {orders.length === 0 && (
+                  <div className="text-center py-12">
+                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No orders found
+                    </h3>
+                    <p className="text-gray-600">
+                      Try adjusting your search or filter criteria.
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>

@@ -394,6 +394,39 @@ const Sidebar = ({ onSectionClick }) => {
           access: "",
           path: "/delivery-system",
         },
+        {
+          id: 10,
+          componentId: "10",
+          number: "10.",
+
+          name: "Videos Management",
+          access: "",
+          path: "/videos-management",
+        },
+      ],
+    },
+    {
+      title: "VENDOR MANAGEMENT",
+      sections: [
+        {
+          id: 15,
+          componentId: "15",
+          number: "15.",
+
+          name: "Vendor Dashboard",
+          access: "",
+          path: "/vendor-dashboard",
+        },
+
+        {
+          id: 16,
+          componentId: "16",
+          number: "16.",
+
+          name: "Vendor outsource Dashboard",
+          access: "",
+          path: "/vendor-preorder-dashboard",
+        },
       ],
     },
     {
