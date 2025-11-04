@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import axios from "axios";
-import { PlusIcon, XCircleIcon, SearchIcon, Save } from "lucide-react";
+import {
+  PlusIcon,
+  XCircleIcon,
+  SearchIcon,
+  Save,
+  AlertCircle,
+} from "lucide-react";
 
 import Sidebar from "../Sidebar/sidebar";
 import { toast } from "react-hot-toast";
@@ -19,6 +25,14 @@ const AddProduct = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearchingParents, setIsSearchingParents] = useState(false);
   const [isSearchingSuppliers, setIsSearchingSuppliers] = useState(false);
+
+  // ✅ NEW: Error state for displaying errors
+  const [showError, setShowError] = useState(false);
+  const [errorDetails, setErrorDetails] = useState({
+    title: "",
+    message: "",
+    technicalDetails: "",
+  });
 
   // near top of AddProduct()
   const [categoriesList, setCategoriesList] = useState([]);
@@ -87,20 +101,13 @@ const AddProduct = () => {
     parentProduct: "",
     globalTradeItemNumber: "",
     k3lNumber: "",
-    sniNumber: "", // Add this new field
-    AmountStockmintoReorder: "", // New field
-
-    safetyDays: "", // New field
-
-    deliveryDays: "", // Default value
-
-    onceShare: false, // New visibility field
-
-    noChildHideParent: false, // New visibility field
-
-    subCategories: "", // New field
-
-    // Field to store calculated safety days stock amount
+    sniNumber: "",
+    AmountStockmintoReorder: "",
+    safetyDays: "",
+    deliveryDays: "",
+    onceShare: false,
+    noChildHideParent: false,
+    subCategories: "",
   });
 
   const toBase64 = (file) =>
@@ -140,6 +147,21 @@ const AddProduct = () => {
   const masterImageRef = useRef(null);
   const moreImageRefs = useRef([]);
 
+  // ✅ NEW: Helper to show error
+  const handleError = (title, message, technicalDetails = "") => {
+    setErrorDetails({
+      title,
+      message,
+      technicalDetails,
+    });
+    setShowError(true);
+
+    // Auto-dismiss after 10 seconds
+    setTimeout(() => {
+      setShowError(false);
+    }, 10000);
+  };
+
   // New helper to toggle reorder mode:
   const handleReorderMode = (mode) => {
     setFormData((fd) => ({
@@ -148,6 +170,7 @@ const AddProduct = () => {
       useSafetyDays: mode === "safety",
     }));
   };
+
   // Fetch parent products and suppliers on component mount
   useEffect(() => {
     const fetchParentProducts = async () => {
@@ -208,7 +231,6 @@ const AddProduct = () => {
       setFilteredSuppliers(suppliers);
     }
   }, [formData.alternateSupplier, suppliers]);
-  // Replace static suppliers with API fetching
 
   // Debounced search for suppliers
   const searchSuppliers = useCallback(
@@ -231,7 +253,6 @@ const AddProduct = () => {
         }
       } catch (error) {
         console.error("Error searching suppliers:", error);
-        // Fallback to client-side filtering
         const filtered = suppliers.filter((supplier) =>
           supplier.name.toLowerCase().includes(term.toLowerCase())
         );
@@ -260,7 +281,6 @@ const AddProduct = () => {
   // Handle product type change
   const handleProductTypeChange = (type) => {
     setProductType(type);
-    // Reset certain fields based on product type
     if (type === "Child") {
       setFormData((prev) => ({
         ...prev,
@@ -323,7 +343,6 @@ const AddProduct = () => {
       setSelectedTags([...selectedTags, tag]);
     }
 
-    // Update formData as well
     setFormData((prev) => {
       const newTags = prev.tags.includes(tag)
         ? prev.tags.filter((t) => t !== tag)
@@ -385,13 +404,11 @@ const AddProduct = () => {
     }));
     setShowSuggestions(false);
   };
-  // Handle input changes - generic function for all form fields
+
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    // Create updated form data
     const updatedFormData = { ...formData, [name]: value };
-
     setFormData(updatedFormData);
   };
 
@@ -406,7 +423,6 @@ const AddProduct = () => {
 
       setIsSearchingParents(true);
       try {
-        // First try via API if available
         try {
           const response = await axios.get(
             `${API_URL}/api/products/parents/search`,
@@ -424,7 +440,6 @@ const AddProduct = () => {
           console.log("API endpoint not available, using local search");
         }
 
-        // Fallback to client-side filtering if API fails
         const filtered = parentProducts.filter(
           (product) =>
             product.productName.toLowerCase().includes(term.toLowerCase()) ||
@@ -441,7 +456,8 @@ const AddProduct = () => {
       }
     },
     [parentProducts]
-  ); // Add parentProducts as a dependency
+  );
+
   // Select parent product
   const selectParentProduct = (product) => {
     setFormData((prev) => ({
@@ -453,7 +469,6 @@ const AddProduct = () => {
   };
 
   const validateForm = () => {
-    // Required fields vary based on product type
     const requiredFields = {
       Parent: [
         "productName",
@@ -478,15 +493,12 @@ const AddProduct = () => {
       ],
     };
 
-    // Additional required fields for all products
     const additionalRequiredFields = ["categories"];
 
-    // Add fields based on product type
     if (productType !== "Parent") {
       additionalRequiredFields.push("globalTradeItemNumber");
     }
 
-    // Combine the required fields
     const allRequiredFields = [
       ...requiredFields[productType],
       ...additionalRequiredFields,
@@ -501,7 +513,8 @@ const AddProduct = () => {
 
     return true;
   };
-  // Submit form function with improved error handling
+
+  // ✅ ENHANCED: Submit form with comprehensive error handling
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -514,39 +527,93 @@ const AddProduct = () => {
 
       // 2) Convert masterImage File to Base64
       if (masterImages[0]?.file) {
-        const dataUrl = await toBase64(masterImages[0].file);
-        const [header, base64] = dataUrl.split(",");
-        payload.masterImage = base64;
-        payload.masterImageType = header.match(/data:(.*);base64/)[1];
+        try {
+          const dataUrl = await toBase64(masterImages[0].file);
+          const [header, base64] = dataUrl.split(",");
+          payload.masterImage = base64;
+          payload.masterImageType = header.match(/data:(.*);base64/)[1];
+        } catch (imgError) {
+          handleError(
+            "Image Processing Error",
+            "Failed to process master image",
+            imgError.message
+          );
+          setIsLoading(false);
+          return;
+        }
       }
 
       // 3) Convert moreImages if needed
       const moreBase64 = [];
       for (let i = 0; i < moreImages.length; i++) {
         if (moreImages[i]?.file) {
-          const url = await toBase64(moreImages[i].file);
-          const [hdr, b64] = url.split(",");
-          moreBase64.push({
-            data: b64,
-            contentType: hdr.match(/data:(.*);base64/)[1],
-          });
+          try {
+            const url = await toBase64(moreImages[i].file);
+            const [hdr, b64] = url.split(",");
+            moreBase64.push({
+              data: b64,
+              contentType: hdr.match(/data:(.*);base64/)[1],
+            });
+          } catch (imgError) {
+            console.warn(`Failed to process image ${i}:`, imgError);
+          }
         }
       }
       if (moreBase64.length) payload.moreImages = moreBase64;
+
+      console.log("🚀 Sending payload to server:", {
+        productType: payload.productType,
+        productName: payload.productName,
+        categories: payload.categories,
+        supplierName: payload.supplierName,
+      });
 
       // 4) POST JSON to server
       const response = await axios.post(`${API_URL}/api/products`, payload, {
         headers: { "Content-Type": "application/json" },
       });
 
+      console.log("✅ Server response:", response.data);
+
       if (response.data.success) {
         handleSuccess();
       } else {
-        toast.error(response.data.message || "Failed to create product");
+        // ✅ Handle server-side validation errors
+        handleError(
+          "Product Creation Failed",
+          response.data.message || "Failed to create product",
+          JSON.stringify(response.data, null, 2)
+        );
       }
     } catch (error) {
-      console.error("Error creating product:", error);
-      toast.error("An error occurred. See console.");
+      console.error("❌ Error creating product:", error);
+
+      // ✅ Comprehensive error handling
+      let errorTitle = "Product Creation Error";
+      let errorMessage =
+        "An unexpected error occurred while creating the product";
+      let technicalDetails = "";
+
+      if (error.response) {
+        // Server responded with error
+        errorTitle = `Server Error (${error.response.status})`;
+        errorMessage =
+          error.response.data?.message || error.response.statusText;
+        technicalDetails = JSON.stringify(error.response.data, null, 2);
+      } else if (error.request) {
+        // Request made but no response
+        errorTitle = "Network Error";
+        errorMessage =
+          "No response from server. Please check your internet connection.";
+        technicalDetails = "The request was made but no response was received";
+      } else {
+        // Error in request setup
+        errorMessage = error.message;
+        technicalDetails = error.stack || "";
+      }
+
+      handleError(errorTitle, errorMessage, technicalDetails);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -745,7 +812,6 @@ const AddProduct = () => {
                       </button>
                     </div>
 
-                    {/* Search results */}
                     {/* Search results */}
                     {showSearchResults && (
                       <div className="mt-2 max-h-40 overflow-y-auto border border-gray-300 rounded">
@@ -1235,7 +1301,7 @@ const AddProduct = () => {
                             />
                             <p className="text-xs ml-6">
                               safety stock in # of days that we wish to have as
-                              safety stock
+                              safety stock
                             </p>
                           </div>
 
@@ -1675,6 +1741,7 @@ const AddProduct = () => {
         </div>
       </div>
 
+      {/* ✅ SUCCESS MODAL */}
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
@@ -1739,6 +1806,90 @@ const AddProduct = () => {
               </div>
               <div className="mt-4 text-sm text-gray-500">
                 This message will automatically close in 5 seconds
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ ERROR MODAL - NEW */}
+      {showError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"></div>
+          <div className="relative bg-white rounded-lg shadow-2xl max-w-2xl w-full p-6 transform transition-all animate-fadeIn overflow-y-auto max-h-[90vh]">
+            <div className="absolute top-3 right-3">
+              <button
+                onClick={() => setShowError(false)}
+                className="text-gray-500 hover:text-gray-700 focus:outline-none"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="text-center">
+              {/* Error Icon */}
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                <AlertCircle className="h-10 w-10 text-red-500" />
+              </div>
+
+              {/* Error Title */}
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {errorDetails.title || "Error Occurred"}
+              </h3>
+
+              {/* Error Message */}
+              <p className="text-gray-700 mb-4 text-base">
+                {errorDetails.message}
+              </p>
+
+              {/* Technical Details */}
+              {errorDetails.technicalDetails && (
+                <div className="mt-4 bg-gray-50 rounded-lg p-4 text-left">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                    Technical Details:
+                  </h4>
+                  <pre className="text-xs text-gray-600 overflow-x-auto whitespace-pre-wrap break-words">
+                    {errorDetails.technicalDetails}
+                  </pre>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex justify-center gap-3 mt-6">
+                <button
+                  onClick={() => setShowError(false)}
+                  className="px-5 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setShowError(false);
+                    // Optionally scroll to top of form
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="px-5 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none"
+                >
+                  Try Again
+                </button>
+              </div>
+
+              {/* Auto-dismiss notice */}
+              <div className="mt-4 text-sm text-gray-500">
+                This message will automatically close in 10 seconds
               </div>
             </div>
           </div>
