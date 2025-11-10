@@ -10,6 +10,7 @@ import Sidebar from "./componenets/Sidebar/sidebar";
 import DeliveryManagementDashboard from "./componenets/Delivery&complaints/DeliveryTypes";
 import AllOrders from "./componenets/Orders/allOrders";
 import AddProduct from "./componenets/Products/addProducts";
+
 import AllEmployees from "./componenets/Employees/allEmployees";
 import AddEmployee from "./componenets/Employees/addEmployee";
 import EditEmployees from "./componenets/Employees/EditEmployees";
@@ -70,6 +71,7 @@ import VendorPreOrderDashboard from "./componenets/VendorPreorder/vendor-preorde
 import AssignPreOrderVendorAreas from "./componenets/VendorPreorder/assignpreordersareas";
 import AllpreOrdersComponent from "./componenets/VendorPreorder/allpreorder";
 import VideoManagementSystem from "./componenets/VideosManagement/videomanagement";
+import ProductManagement from "./componenets/Products/productmanagement";
 
 function App() {
   return (
@@ -129,6 +131,14 @@ function App() {
           element={
             <>
               <OrderManagementPickup />
+            </>
+          }
+        />
+        <Route
+          path="/admin/Products/edit"
+          element={
+            <>
+              <ProductManagement />
             </>
           }
         />

@@ -287,7 +287,7 @@ const Sidebar = ({ onSectionClick }) => {
       componentId: "admin-products",
       number: "6.",
       name: "Products",
-      path: "/admin/Products",
+      path: "/admin/Products/edit",
       icon: <Package />,
     },
     {

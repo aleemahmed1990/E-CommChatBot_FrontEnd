@@ -61,7 +61,7 @@ export default function TransactionControlView() {
 
       try {
         const listRes = await fetch(
-          `https://e-commchatbot-backend-4.onrender.com/api/orders?${params}`
+          `http://localhost:5000/api/orders?${params}`
         );
 
         console.log("Response status:", listRes.status);
@@ -95,9 +95,28 @@ export default function TransactionControlView() {
           );
         }
 
+        // ⭐ FILTER: Show only ONE order per customer (the one with largest amount)
+        const customerOrderMap = new Map();
+
+        listOrders.forEach((order) => {
+          const customerId = order.customerId;
+          const existingOrder = customerOrderMap.get(customerId);
+
+          if (!existingOrder || order.totalAmount > existingOrder.totalAmount) {
+            customerOrderMap.set(customerId, order);
+          }
+        });
+
+        // Convert map back to array
+        const filteredOrders = Array.from(customerOrderMap.values());
+
+        console.log("=== FILTERED TO ONE ORDER PER CUSTOMER ===");
+        console.log("Original orders:", listOrders.length);
+        console.log("Filtered orders:", filteredOrders.length);
+
         // Orders should already have all required data from the fixed router
-        setOrders(listOrders);
-        setTotal(typeof listTotal === "number" ? listTotal : 0);
+        setOrders(filteredOrders);
+        setTotal(filteredOrders.length);
       } catch (error) {
         console.error("=== TRANSACTION CONTROL FETCH ERROR ===", error);
         setError(`Failed to fetch orders: ${error.message}`);
@@ -235,13 +254,13 @@ export default function TransactionControlView() {
                           {o.orderId}
                         </td>
                         <td className="py-4 px-4 text-gray-600 text-sm">
-                          {new Date(o.created || o.orderDate).toLocaleString()}
+                          {new Date(o.orderDate || o.created).toLocaleString()}
                         </td>
                         <td className="py-4 px-4">
                           <div className="flex items-center">
                             <User className="mr-2 text-gray-400" size={16} />
                             <span className="font-medium text-gray-900">
-                              {o.customer || "N/A"}
+                              {o.customer || o.customerName || "N/A"}
                             </span>
                           </div>
                         </td>
@@ -249,7 +268,7 @@ export default function TransactionControlView() {
                           <div className="flex items-center">
                             <Phone className="mr-2 text-gray-400" size={16} />
                             <span className="text-gray-700">
-                              {o.phoneNumber || "N/A"}
+                              {o.phoneNumber || o.customerPhone || "N/A"}
                             </span>
                           </div>
                         </td>
@@ -330,7 +349,7 @@ export default function TransactionControlView() {
                                       Customer:
                                     </span>
                                     <span className="font-medium">
-                                      {o.customer}
+                                      {o.customer || o.customerName}
                                     </span>
                                   </div>
                                   <div>
@@ -338,7 +357,7 @@ export default function TransactionControlView() {
                                       Phone:
                                     </span>
                                     <span className="font-medium">
-                                      {o.phoneNumber}
+                                      {o.phoneNumber || o.customerPhone}
                                     </span>
                                   </div>
                                   <div>

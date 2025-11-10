@@ -17,7 +17,7 @@ export default function BankAccountView() {
   const [allocatedStatus, setAllocatedStatus] = useState("allocated");
 
   useEffect(() => {
-    fetch(`https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}`)
+    fetch(`http://localhost:5000/api/orders/${orderId}`)
       .then((r) => r.json())
       .then(setOrder)
       .catch(console.error);
@@ -25,7 +25,7 @@ export default function BankAccountView() {
 
   const handleSave = () => {
     alert("The receipt is marked as correct");
-    navigate("/verification/ORD10028");
+    navigate(`/verification/${orderId}`);
   };
 
   const getImageSource = () => {
@@ -85,7 +85,9 @@ export default function BankAccountView() {
           ← Back to Verification
         </button>
 
-        <h1 className="text-2xl font-bold mb-6">Bank Account</h1>
+        <h1 className="text-2xl font-bold mb-6">
+          Bank Account - {order.orderId}
+        </h1>
 
         {/* ─── TABLE ──────────────────────────────────────────── */}
         <div className="overflow-x-auto border rounded-lg mb-8 bg-white">
@@ -116,7 +118,9 @@ export default function BankAccountView() {
               <tr className="hover:bg-gray-100">
                 <td className="py-3 px-4 text-sm">{receivedAt}</td>
                 <td className="py-3 px-4 text-sm">{receivedDate}</td>
-                <td className="py-3 px-4 text-sm">{order.customer}</td>
+                <td className="py-3 px-4 text-sm">
+                  {order.customer || order.customerName}
+                </td>
                 <td className="py-3 px-4 text-sm">
                   <input
                     type="text"
@@ -126,7 +130,7 @@ export default function BankAccountView() {
                     className="w-full border rounded p-1 text-sm"
                   />
                 </td>
-                <td className="py-3 px-4 text-sm">{order.totalAmount}</td>
+                <td className="py-3 px-4 text-sm">${order.totalAmount}</td>
                 <td className="py-3 px-4 text-sm">
                   <input
                     type="text"
@@ -167,56 +171,183 @@ export default function BankAccountView() {
         <div className="flex flex-col md:flex-row gap-8">
           {/* MORE INFO */}
           <div className="flex-1 bg-white rounded-md p-6 space-y-4">
-            <h2 className="text-xl font-semibold">more info about payment</h2>
-            <div className="space-y-2 text-gray-700">
-              <div>
-                <span className="font-medium">time received:</span> {receivedAt}
+            <h2 className="text-xl font-semibold">
+              Complete Payment Information
+            </h2>
+            <div className="space-y-2 text-gray-700 text-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="font-medium">Time Received:</span>{" "}
+                  {receivedAt}
+                </div>
+                <div>
+                  <span className="font-medium">Date:</span> {receivedDate}
+                </div>
+                <div>
+                  <span className="font-medium">Bank:</span>{" "}
+                  {order.paidBankName || "Not provided"}
+                </div>
+                <div>
+                  <span className="font-medium">Account Holder:</span>{" "}
+                  {order.accountHolderName || "Not provided"}
+                </div>
+                <div>
+                  <span className="font-medium">Transaction ID:</span>{" "}
+                  {order.transactionId || "Not provided"}
+                </div>
+                <div>
+                  <span className="font-medium">Payment Method:</span>{" "}
+                  {order.paymentMethod || "Bank Transfer"}
+                </div>
+                <div>
+                  <span className="font-medium">Amount:</span> $
+                  {order.totalAmount}
+                </div>
+                <div>
+                  <span className="font-medium">Payment Status:</span>{" "}
+                  {order.paymentStatus || "Pending"}
+                </div>
               </div>
-              <div>
-                <span className="font-medium">time credited in account:</span>—
+
+              {/* Delivery Information */}
+              <div className="pt-4 border-t mt-4">
+                <h3 className="font-semibold mb-2">Delivery Details</h3>
+                <div className="space-y-1">
+                  {order.deliveryOption && (
+                    <div>
+                      <span className="font-medium">Delivery Option:</span>{" "}
+                      {order.deliveryOption}
+                    </div>
+                  )}
+                  {order.deliveryType && (
+                    <div>
+                      <span className="font-medium">Delivery Type:</span>{" "}
+                      {order.deliveryType}
+                    </div>
+                  )}
+                  {order.deliverySpeed && (
+                    <div>
+                      <span className="font-medium">Delivery Speed:</span>{" "}
+                      {order.deliverySpeed}
+                    </div>
+                  )}
+                  {order.deliveryTimeFrame && (
+                    <div>
+                      <span className="font-medium">Time Frame:</span>{" "}
+                      {order.deliveryTimeFrame}
+                    </div>
+                  )}
+                  {order.timeSlot && (
+                    <div>
+                      <span className="font-medium">Time Slot:</span>{" "}
+                      {order.timeSlot}
+                    </div>
+                  )}
+                  {order.deliveryCharge > 0 && (
+                    <div>
+                      <span className="font-medium">Delivery Charge:</span> $
+                      {order.deliveryCharge}
+                    </div>
+                  )}
+                  {order.deliveryAddress && (
+                    <div>
+                      <span className="font-medium">Address:</span>
+                      <div className="ml-4 mt-1">
+                        {order.deliveryAddress.nickname && (
+                          <div>
+                            • Nickname: {order.deliveryAddress.nickname}
+                          </div>
+                        )}
+                        {order.deliveryAddress.fullAddress && (
+                          <div>• {order.deliveryAddress.fullAddress}</div>
+                        )}
+                        {order.deliveryAddress.area && (
+                          <div>• Area: {order.deliveryAddress.area}</div>
+                        )}
+                        {order.deliveryAddress.googleMapLink && (
+                          <div>
+                            • Map:{" "}
+                            <a
+                              href={order.deliveryAddress.googleMapLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline"
+                            >
+                              {order.deliveryAddress.googleMapLink}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                <span className="font-medium">bank:</span>{" "}
-                {order.paidBankName || "—"}
+
+              {/* Customer Information */}
+              <div className="pt-4 border-t mt-4">
+                <h3 className="font-semibold mb-2">Customer Information</h3>
+                <div className="space-y-1">
+                  <div>
+                    <span className="font-medium">Name:</span>{" "}
+                    {order.customer || order.customerName}
+                  </div>
+                  <div>
+                    <span className="font-medium">Phone:</span>{" "}
+                    {order.phoneNumber || order.customerPhone}
+                  </div>
+                  <div>
+                    <span className="font-medium">Customer ID:</span>{" "}
+                    {order.customerId}
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="font-medium">account sender:</span>{" "}
-                {order.accountHolderName || "—"}
-              </div>
-              <div>
-                <span className="font-medium">text:</span> {textBox || "—"}
+
+              <div className="pt-4 border-t mt-4">
+                <span className="font-medium">Admin Notes:</span>
+                <div className="mt-1">{textBox || "—"}</div>
               </div>
             </div>
             <button
               onClick={handleSave}
-              className="mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
+              className="mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded w-full"
             >
-              Correct Receipt
+              Correct Receipt - Mark as Verified
             </button>
           </div>
 
           {/* RECEIPT PHOTO */}
-          <div className="w-full md:w-64 bg-white rounded-md p-6 flex flex-col items-center">
-            <h2 className="mb-4 font-semibold">Receipt photo</h2>
-            <div className="w-full h-48 bg-gray-100 flex items-center justify-center mb-4">
+          <div className="w-full md:w-96 bg-white rounded-md p-6 flex flex-col">
+            <h2 className="mb-4 font-semibold text-lg">Receipt Photo</h2>
+            <div className="w-full h-96 bg-gray-100 flex items-center justify-center mb-4 rounded-lg overflow-hidden">
               {imageSource ? (
                 <img
                   src={imageSource}
                   alt="receipt"
-                  className="object-contain h-full"
+                  className="object-contain h-full w-full"
                 />
               ) : (
-                <FaRegFileImage size={48} className="text-gray-400" />
+                <div className="flex flex-col items-center text-gray-400">
+                  <FaRegFileImage size={48} />
+                  <p className="mt-2 text-sm">No receipt image uploaded</p>
+                </div>
               )}
             </div>
-            <div className="text-gray-700 text-sm space-y-1 mb-4">
+            <div className="text-gray-700 text-sm space-y-2 mb-4 bg-gray-50 p-4 rounded">
               <div>
                 <span className="font-medium">Bank:</span>{" "}
-                {order.paidBankName || "—"}
+                {order.paidBankName || "Not provided"}
               </div>
               <div>
-                <span className="font-medium">Sender acct #:</span>{" "}
-                {order.accountHolderName || "—"}
+                <span className="font-medium">Account Holder:</span>{" "}
+                {order.accountHolderName || "Not provided"}
+              </div>
+              <div>
+                <span className="font-medium">Amount:</span> $
+                {order.totalAmount}
+              </div>
+              <div>
+                <span className="font-medium">Transaction ID:</span>{" "}
+                {order.transactionId || "Not provided"}
               </div>
             </div>
             <button

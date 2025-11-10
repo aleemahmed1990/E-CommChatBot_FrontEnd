@@ -43,7 +43,7 @@ const CustomerPage = () => {
       if (dateFilter.endDate) params.append("endDate", dateFilter.endDate);
 
       const response = await fetch(
-        `https://e-commchatbot-backend-4.onrender.com/api/customers?${params}`
+        `http://localhost:5000/api/customers?${params}`
       );
       if (!response.ok) throw new Error("Failed to fetch customers");
 

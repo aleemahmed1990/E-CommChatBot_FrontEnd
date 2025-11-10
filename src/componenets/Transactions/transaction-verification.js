@@ -1,7 +1,17 @@
+// src/components/views/VerificationView.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../Sidebar/sidebar";
-import { ChevronLeft, User, ImageIcon, Package, X } from "lucide-react";
+import {
+  ChevronLeft,
+  User,
+  ImageIcon,
+  Package,
+  X,
+  MapPin,
+  Truck,
+  Clock,
+} from "lucide-react";
 
 export default function VerificationView() {
   const navigate = useNavigate();
@@ -26,7 +36,7 @@ export default function VerificationView() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}`)
+    fetch(`http://localhost:5000/api/orders/${orderId}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
@@ -51,7 +61,7 @@ export default function VerificationView() {
     setUpdating(true);
     try {
       const response = await fetch(
-        `https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}/status`,
+        `http://localhost:5000/api/orders/${orderId}/status`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -69,10 +79,7 @@ export default function VerificationView() {
       const result = await response.json();
       console.log("Order approved:", result);
 
-      // Show success message
       alert("Order approved successfully!");
-
-      // Navigate back to transactions control
       navigate("/Transactions-control");
     } catch (err) {
       console.error("Error approving order:", err);
@@ -99,7 +106,7 @@ export default function VerificationView() {
     setUpdating(true);
     try {
       const response = await fetch(
-        `https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}/status`,
+        `http://localhost:5000/api/orders/${orderId}/status`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -117,10 +124,7 @@ export default function VerificationView() {
       const result = await response.json();
       console.log("Order rejected:", result);
 
-      // Show success message
       alert(`Order rejected successfully. Reason: ${rejectionReason}`);
-
-      // Navigate back to transactions control
       navigate("/Transactions-control");
     } catch (err) {
       console.error("Error rejecting order:", err);
@@ -134,25 +138,20 @@ export default function VerificationView() {
     setImageZoomed(!imageZoomed);
   };
 
-  // Enhanced helper function to correctly handle the image data
   const getImageSource = () => {
     if (!order || !order.receiptImage) return null;
 
     try {
-      // Handle the case where receiptImage is a string containing the data URL
       if (typeof order.receiptImage === "string") {
         return order.receiptImage;
       }
 
-      // Handle the case where receiptImage is an object with data property
       if (order.receiptImage && typeof order.receiptImage === "object") {
-        // If data is already a base64 string with data: prefix
         if (typeof order.receiptImage.data === "string") {
           if (order.receiptImage.data.startsWith("data:")) {
             return order.receiptImage.data;
           }
 
-          // Otherwise construct the full data URL
           const contentType =
             order.receiptImage.contentType ||
             order.receiptImageMetadata?.mimetype ||
@@ -160,7 +159,6 @@ export default function VerificationView() {
           return `data:${contentType};base64,${order.receiptImage.data}`;
         }
 
-        // If data is an array (Buffer representation in JSON)
         if (Array.isArray(order.receiptImage.data)) {
           const contentType =
             order.receiptImage.contentType ||
@@ -174,7 +172,6 @@ export default function VerificationView() {
           return `data:${contentType};base64,${base64String}`;
         }
 
-        // Handle direct data property
         if (
           order.receiptImage.data &&
           order.receiptImage.data.startsWith("data:")
@@ -191,7 +188,6 @@ export default function VerificationView() {
     }
   };
 
-  // Format currency
   const formatCurrency = (amount) => {
     if (typeof amount === "number") {
       return `Rs. ${amount.toLocaleString()}`;
@@ -273,20 +269,21 @@ export default function VerificationView() {
 
         <button
           onClick={() => navigate("/Transactions-control")}
-          className="mb-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md transition-colors"
+          className="mb-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md transition-colors flex items-center"
         >
-          &larr; Back to Transactions
+          <ChevronLeft className="mr-1" size={16} />
+          Back to Transactions
         </button>
 
         <div className="bg-white rounded-md p-6 mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* LEFT SIDE - Transaction Details */}
           <div className="flex space-x-4">
-            <div className="text-center">
+            <div className="text-center min-w-[100px]">
               <User className="h-12 w-12 text-gray-500 mx-auto" />
-              <p className="mt-2 text-gray-600 text-xs">
+              <p className="mt-2 text-gray-600 text-xs font-medium">
                 {order.customer || order.customerName}
               </p>
-              <p className="text-gray-600 text-xs">Order #: {order.orderId}</p>
+              <p className="text-gray-600 text-xs">Order: {order.orderId}</p>
               <p className="text-gray-500 text-xs">
                 {order.orderDate
                   ? new Date(order.orderDate).toLocaleDateString()
@@ -295,10 +292,10 @@ export default function VerificationView() {
             </div>
             <div className="flex-1">
               <h2 className="text-sm font-semibold mb-2 text-gray-700">
-                Transaction Screenshot
+                Transaction Receipt
               </h2>
               <div
-                className="w-full h-40 bg-gray-100 flex items-center justify-center rounded-md mb-4 overflow-hidden cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors"
+                className="w-full h-48 bg-gray-100 flex items-center justify-center rounded-md mb-2 overflow-hidden cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors"
                 onClick={imageSource ? toggleImageZoom : undefined}
               >
                 {imageSource ? (
@@ -322,25 +319,25 @@ export default function VerificationView() {
                 ) : (
                   <div className="flex flex-col items-center justify-center text-gray-500">
                     <ImageIcon className="h-10 w-10 mb-2" />
-                    <p className="text-sm">No image available</p>
+                    <p className="text-sm">No receipt uploaded</p>
                   </div>
                 )}
               </div>
               {imageSource && (
-                <p className="text-xs text-blue-500 text-center mb-2">
-                  Click to zoom image
+                <p className="text-xs text-blue-500 text-center mb-3">
+                  ✨ Click image to zoom
                 </p>
               )}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold">AMOUNT RECEIVED:</h3>
+                <div className="flex items-center justify-between bg-red-50 p-2 rounded">
+                  <h3 className="text-lg font-bold">AMOUNT:</h3>
                   <span className="text-lg font-bold text-red-600">
                     {formatCurrency(order.totalAmount)}
                   </span>
                 </div>
-                <div className="text-sm text-gray-600 space-y-1">
+                <div className="text-sm text-gray-600 space-y-1 bg-gray-50 p-3 rounded">
                   <p>
-                    <span className="font-medium">From:</span>{" "}
+                    <span className="font-medium">Account Holder:</span>{" "}
                     {order.accountHolderName || "Not provided"}
                   </p>
                   <p>
@@ -373,39 +370,44 @@ export default function VerificationView() {
               </div>
               <button
                 onClick={() => navigate(`/bank-view/${orderId}`)}
-                className="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-md font-medium transition-colors"
+                className="mt-3 w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-md font-medium transition-colors"
               >
-                Double Check Manually
+                🔍 Double Check Manually
               </button>
             </div>
           </div>
 
           {/* RIGHT SIDE - Approval Section */}
           <div>
-            <h3 className="text-gray-700 font-semibold mb-3">Final Approval</h3>
+            <h3 className="text-gray-700 font-semibold mb-3 text-lg">
+              Final Approval Decision
+            </h3>
             <div className="flex space-x-2 mb-4">
               <button
                 onClick={handleApprove}
                 disabled={updating}
-                className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-2 rounded-md font-medium transition-colors"
+                className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-3 rounded-md font-medium transition-colors"
               >
-                {updating ? "Processing..." : "Approved"}
+                {updating ? "Processing..." : "✓ Approve"}
               </button>
               <button
                 onClick={handleReject}
                 disabled={updating}
-                className="flex-1 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white py-2 rounded-md font-medium transition-colors"
+                className="flex-1 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white py-3 rounded-md font-medium transition-colors"
               >
-                {updating ? "Processing..." : "Not Approved"}
+                {updating ? "Processing..." : "✗ Reject"}
               </button>
             </div>
-            <div className="border rounded-md p-4">
-              <p className="font-medium mb-2 text-gray-700">
-                If not approved, select a reason:
+            <div className="border rounded-md p-4 bg-gray-50">
+              <p className="font-medium mb-3 text-gray-700">
+                If rejecting, select a reason:
               </p>
               <div className="space-y-2 mb-3 text-sm text-gray-600">
                 {reasons.map((r) => (
-                  <label key={r} className="flex items-center cursor-pointer">
+                  <label
+                    key={r}
+                    className="flex items-center cursor-pointer hover:bg-white p-1 rounded"
+                  >
                     <input
                       type="radio"
                       name="reason"
@@ -421,7 +423,7 @@ export default function VerificationView() {
               {reason === "other" && (
                 <input
                   type="text"
-                  placeholder="Write your reason"
+                  placeholder="Write your reason here..."
                   className="w-full border border-gray-300 rounded-md p-2 mb-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={otherText}
                   onChange={(e) => setOtherText(e.target.value)}
@@ -431,30 +433,153 @@ export default function VerificationView() {
           </div>
         </div>
 
-        {/* ORDER DETAILS */}
+        {/* COMPLETE ORDER DETAILS */}
         <div className="bg-white rounded-md p-6">
-          <h3 className="text-gray-700 font-semibold mb-4">Order Details</h3>
-          <div className="border rounded-md p-4 space-y-4">
-            {/* Order Items */}
+          <h3 className="text-gray-700 font-semibold mb-4 text-lg">
+            Complete Order Information
+          </h3>
+
+          {/* Delivery Information Section */}
+          <div className="border rounded-md p-4 mb-4 bg-blue-50">
+            <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+              <Truck className="mr-2" size={18} />
+              Delivery Information
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              {order.deliveryOption && (
+                <div>
+                  <span className="font-medium text-gray-700">
+                    Delivery Option:
+                  </span>
+                  <span className="ml-2 text-gray-600">
+                    {order.deliveryOption}
+                  </span>
+                </div>
+              )}
+              {order.deliveryType && (
+                <div>
+                  <span className="font-medium text-gray-700">
+                    Delivery Type:
+                  </span>
+                  <span className="ml-2 text-gray-600 capitalize">
+                    {order.deliveryType}
+                  </span>
+                </div>
+              )}
+              {order.deliverySpeed && (
+                <div>
+                  <span className="font-medium text-gray-700">
+                    Delivery Speed:
+                  </span>
+                  <span className="ml-2 text-gray-600 capitalize">
+                    {order.deliverySpeed}
+                  </span>
+                </div>
+              )}
+              {order.deliveryTimeFrame && (
+                <div>
+                  <span className="font-medium text-gray-700">Time Frame:</span>
+                  <span className="ml-2 text-gray-600">
+                    {order.deliveryTimeFrame}
+                  </span>
+                </div>
+              )}
+              {order.timeSlot && (
+                <div>
+                  <span className="font-medium text-gray-700">Time Slot:</span>
+                  <span className="ml-2 text-gray-600">{order.timeSlot}</span>
+                </div>
+              )}
+              {order.deliveryCharge !== undefined && (
+                <div>
+                  <span className="font-medium text-gray-700">
+                    Delivery Charge:
+                  </span>
+                  <span className="ml-2 text-gray-600">
+                    {formatCurrency(order.deliveryCharge)}
+                  </span>
+                </div>
+              )}
+              {order.deliveryLocation && (
+                <div className="col-span-2">
+                  <span className="font-medium text-gray-700">Location:</span>
+                  <span className="ml-2 text-gray-600">
+                    {order.deliveryLocation}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Delivery Address with Google Maps */}
+            {order.deliveryAddress && (
+              <div className="mt-3 pt-3 border-t">
+                <div className="flex items-start">
+                  <MapPin className="mr-2 mt-1 flex-shrink-0" size={16} />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-700 mb-1">
+                      Delivery Address:
+                    </p>
+                    {order.deliveryAddress.nickname && (
+                      <p className="text-sm text-gray-600">
+                        📍 {order.deliveryAddress.nickname}
+                      </p>
+                    )}
+                    {order.deliveryAddress.fullAddress && (
+                      <p className="text-sm text-gray-600">
+                        {order.deliveryAddress.fullAddress}
+                      </p>
+                    )}
+                    {order.deliveryAddress.area && (
+                      <p className="text-sm text-gray-600">
+                        Area: {order.deliveryAddress.area}
+                      </p>
+                    )}
+                    {order.deliveryAddress.googleMapLink && (
+                      <a
+                        href={order.deliveryAddress.googleMapLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline mt-1"
+                      >
+                        🗺️ Open in Google Maps →
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Order Items */}
+          <div className="border rounded-md p-4 mb-4">
+            <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+              <Package className="mr-2" size={18} />
+              Order Items
+            </h4>
             {order.items && order.items.length > 0 ? (
               order.items.map((item, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Package className="w-8 h-8 text-gray-500" />
+                <div
+                  key={i}
+                  className="flex items-center justify-between py-2 border-b last:border-b-0"
+                >
+                  <div className="flex items-center space-x-3 flex-1">
+                    <Package className="w-6 h-6 text-gray-400" />
                     <div>
-                      <p className="font-medium">{item.productName}</p>
+                      <p className="font-medium text-gray-800">
+                        {item.productName}
+                      </p>
                       <p className="text-xs text-gray-600">
                         Qty: {item.quantity}{" "}
                         {item.weight && `• Weight: ${item.weight}`}
                       </p>
-                      {item.unitPrice && (
+                      {item.price && (
                         <p className="text-xs text-gray-500">
-                          Unit Price: {formatCurrency(item.unitPrice)}
+                          Unit Price: {formatCurrency(item.price)}
                         </p>
                       )}
                     </div>
                   </div>
-                  <p className="font-medium">
+                  <p className="font-medium text-gray-800">
                     {formatCurrency(item.totalPrice)}
                   </p>
                 </div>
@@ -464,11 +589,16 @@ export default function VerificationView() {
                 No items found
               </div>
             )}
+          </div>
 
-            {/* Order Summary */}
-            <div className="pt-4 border-t space-y-2 text-sm text-gray-600">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
+          {/* Order Financial Summary */}
+          <div className="border rounded-md p-4 bg-gray-50">
+            <h4 className="font-semibold text-gray-800 mb-3">
+              Payment Summary
+            </h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between text-gray-600">
+                <span>Subtotal:</span>
                 <span>
                   {formatCurrency(
                     order.items
@@ -482,91 +612,67 @@ export default function VerificationView() {
               </div>
 
               {order.deliveryCharge > 0 && (
-                <div className="flex justify-between">
-                  <span>Delivery Fee</span>
+                <div className="flex justify-between text-gray-600">
+                  <span>Delivery Fee:</span>
                   <span>{formatCurrency(order.deliveryCharge)}</span>
                 </div>
               )}
 
               {order.ecoDeliveryDiscount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Eco Delivery Discount</span>
+                  <span>Eco Delivery Discount:</span>
                   <span>-{formatCurrency(order.ecoDeliveryDiscount)}</span>
                 </div>
               )}
 
               {order.firstOrderDiscount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>First Order Discount</span>
+                  <span>First Order Discount:</span>
                   <span>-{formatCurrency(order.firstOrderDiscount)}</span>
                 </div>
               )}
 
-              <div className="flex justify-between font-bold text-gray-800 pt-2 border-t">
-                <span>Total Amount</span>
-                <span>{formatCurrency(order.totalAmount)}</span>
+              <div className="flex justify-between font-bold text-gray-800 pt-2 border-t text-base">
+                <span>Total Amount:</span>
+                <span className="text-red-600">
+                  {formatCurrency(order.totalAmount)}
+                </span>
               </div>
             </div>
+          </div>
 
-            {/* Delivery Information */}
-            {(order.deliveryAddress ||
-              order.deliveryLocation ||
-              order.deliveryOption) && (
-              <div className="pt-4 border-t">
-                <h4 className="font-medium text-gray-700 mb-2">
-                  Delivery Information
-                </h4>
-                <div className="text-sm text-gray-600 space-y-1">
-                  {order.deliveryOption && (
-                    <p>
-                      <span className="font-medium">Delivery Option:</span>{" "}
-                      {order.deliveryOption}
-                    </p>
-                  )}
-                  {order.deliveryLocation && (
-                    <p>
-                      <span className="font-medium">Location:</span>{" "}
-                      {order.deliveryLocation}
-                    </p>
-                  )}
-                  {order.deliveryAddress && (
-                    <div>
-                      <p className="font-medium">Address:</p>
-                      <div className="ml-2">
-                        {order.deliveryAddress.nickname && (
-                          <p>• {order.deliveryAddress.nickname}</p>
-                        )}
-                        {order.deliveryAddress.fullAddress && (
-                          <p>• {order.deliveryAddress.fullAddress}</p>
-                        )}
-                        {order.deliveryAddress.area && (
-                          <p>• Area: {order.deliveryAddress.area}</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Customer Information */}
-            <div className="pt-4 border-t">
-              <h4 className="font-medium text-gray-700 mb-2">
-                Customer Information
-              </h4>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>
-                  <span className="font-medium">Name:</span>{" "}
+          {/* Customer Information */}
+          <div className="border rounded-md p-4 mt-4 bg-purple-50">
+            <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+              <User className="mr-2" size={18} />
+              Customer Details
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="font-medium text-gray-700">Name:</span>
+                <span className="ml-2 text-gray-600">
                   {order.customer || order.customerName}
-                </p>
-                <p>
-                  <span className="font-medium">Phone:</span>{" "}
-                  {order.customerPhone}
-                </p>
-                <p>
-                  <span className="font-medium">Customer ID:</span>{" "}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Phone:</span>
+                <span className="ml-2 text-gray-600">
+                  {order.phoneNumber || order.customerPhone}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Customer ID:</span>
+                <span className="ml-2 text-gray-600 text-xs">
                   {order.customerId}
-                </p>
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Order Date:</span>
+                <span className="ml-2 text-gray-600">
+                  {order.orderDate
+                    ? new Date(order.orderDate).toLocaleString()
+                    : "N/A"}
+                </span>
               </div>
             </div>
           </div>

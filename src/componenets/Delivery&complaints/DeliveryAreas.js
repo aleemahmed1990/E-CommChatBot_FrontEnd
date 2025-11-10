@@ -15,12 +15,31 @@ const AreasManagement = () => {
     scooterPrice: 0,
   });
 
-  useEffect(() => {
-    // Simulate API call - start with empty array
-    setTimeout(() => {
-      setAreas([]);
+  // Fetch areas from API
+  const fetchAreas = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "https://e-commchatbot-backend-4.onrender.com/api/areas"
+      );
+
+      if (response.ok) {
+        const areasData = await response.json();
+        setAreas(areasData);
+      } else {
+        console.error("Failed to fetch areas");
+        // If API fails, maintain existing areas
+      }
+    } catch (error) {
+      console.error("Error fetching areas:", error);
+      // If API fails, maintain existing areas
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  useEffect(() => {
+    fetchAreas();
   }, []);
 
   const formatRupiah = (amount) => {
@@ -38,19 +57,26 @@ const AreasManagement = () => {
     }
 
     try {
-      // API call would go here
       const response = await fetch(
         "https://e-commchatbot-backend-4.onrender.com/api/areas",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newArea),
+          body: JSON.stringify({
+            ...newArea,
+            name: newArea.name.toLowerCase(),
+            isActive: true,
+          }),
         }
       );
 
       if (response.ok) {
         const addedArea = await response.json();
-        setAreas([...areas, addedArea]);
+
+        // Update state with the new area from API response
+        setAreas((prevAreas) => [...prevAreas, addedArea]);
+
+        // Reset form
         setNewArea({
           name: "",
           displayName: "",
@@ -58,17 +84,26 @@ const AreasManagement = () => {
           scooterPrice: 0,
         });
         setIsAddingNew(false);
+
+        // Show success message
+        alert("Area added successfully!");
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to add area: ${errorData.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error adding area:", error);
-      // For demo purposes, add locally
+
+      // Fallback: Add locally if API fails
       const tempArea = {
         _id: Date.now().toString(),
         ...newArea,
         name: newArea.name.toLowerCase(),
         isActive: true,
+        createdAt: new Date().toISOString(),
       };
-      setAreas([...areas, tempArea]);
+
+      setAreas((prevAreas) => [...prevAreas, tempArea]);
       setNewArea({
         name: "",
         displayName: "",
@@ -76,12 +111,12 @@ const AreasManagement = () => {
         scooterPrice: 0,
       });
       setIsAddingNew(false);
+      alert("Area added locally (API unavailable)");
     }
   };
 
   const handleUpdateArea = async (id, updatedData) => {
     try {
-      // API call would go here
       const response = await fetch(
         `https://e-commchatbot-backend-4.onrender.com/api/areas/${id}`,
         {
@@ -93,18 +128,28 @@ const AreasManagement = () => {
 
       if (response.ok) {
         const updatedArea = await response.json();
-        setAreas(areas.map((area) => (area._id === id ? updatedArea : area)));
+
+        // Update the specific area in state
+        setAreas((prevAreas) =>
+          prevAreas.map((area) => (area._id === id ? updatedArea : area))
+        );
         setEditingId(null);
+        alert("Area updated successfully!");
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to update area: ${errorData.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error updating area:", error);
-      // For demo purposes, update locally
-      setAreas(
-        areas.map((area) =>
+
+      // Fallback: Update locally if API fails
+      setAreas((prevAreas) =>
+        prevAreas.map((area) =>
           area._id === id ? { ...area, ...updatedData } : area
         )
       );
       setEditingId(null);
+      alert("Area updated locally (API unavailable)");
     }
   };
 
@@ -112,7 +157,6 @@ const AreasManagement = () => {
     if (!window.confirm("Are you sure you want to delete this area?")) return;
 
     try {
-      // API call would go here
       const response = await fetch(
         `https://e-commchatbot-backend-4.onrender.com/api/areas/${id}`,
         {
@@ -121,18 +165,27 @@ const AreasManagement = () => {
       );
 
       if (response.ok) {
-        setAreas(areas.filter((area) => area._id !== id));
+        // Remove from state only after successful API call
+        setAreas((prevAreas) => prevAreas.filter((area) => area._id !== id));
+        alert("Area deleted successfully!");
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to delete area: ${errorData.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error deleting area:", error);
-      // For demo purposes, delete locally
-      setAreas(areas.filter((area) => area._id !== id));
+
+      // Fallback: Delete locally if API fails
+      setAreas((prevAreas) => prevAreas.filter((area) => area._id !== id));
+      alert("Area deleted locally (API unavailable)");
     }
   };
 
   const toggleAreaStatus = async (id) => {
     const area = areas.find((a) => a._id === id);
-    await handleUpdateArea(id, { isActive: !area.isActive });
+    const newStatus = !area.isActive;
+
+    await handleUpdateArea(id, { isActive: newStatus });
   };
 
   if (loading) {
@@ -185,7 +238,9 @@ const AreasManagement = () => {
 
         <div className="bg-white rounded-lg shadow-lg p-6 mt-4">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Delivery Areas</h2>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Delivery Areas ({areas.length})
+            </h2>
             <button
               onClick={() => setIsAddingNew(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
@@ -200,55 +255,68 @@ const AreasManagement = () => {
             <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
               <h3 className="text-lg font-semibold mb-4">Add New Area</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Area name (e.g., seminyak)"
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={newArea.name}
-                  onChange={(e) =>
-                    setNewArea({ ...newArea, name: e.target.value })
-                  }
-                />
-                <input
-                  type="text"
-                  placeholder="Display name (e.g., Seminyak)"
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={newArea.displayName}
-                  onChange={(e) =>
-                    setNewArea({ ...newArea, displayName: e.target.value })
-                  }
-                />
-                <h1 className="px-3 py-2 border focus:ring-blue-500">
-                  Truck pricing{" "}
-                </h1>
-                <input
-                  type="number"
-                  placeholder="Area name (e.g., seminyak)"
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={newArea.truckPrice}
-                  onChange={(e) =>
-                    setNewArea({
-                      ...newArea,
-                      truckPrice: parseInt(e.target.value) || 0,
-                    })
-                  }
-                />
-                <h1 className="px-3 py-2 border focus:ring-blue-500">
-                  {" "}
-                  Scooter Pricing{" "}
-                </h1>
-                <input
-                  type="number"
-                  placeholder="Scooter price (IDR)"
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={newArea.scooterPrice}
-                  onChange={(e) =>
-                    setNewArea({
-                      ...newArea,
-                      scooterPrice: parseInt(e.target.value) || 0,
-                    })
-                  }
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Area Code *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., seminyak"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newArea.name}
+                    onChange={(e) =>
+                      setNewArea({ ...newArea, name: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Display Name *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Seminyak"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newArea.displayName}
+                    onChange={(e) =>
+                      setNewArea({ ...newArea, displayName: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Truck Price (IDR)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Truck delivery price"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newArea.truckPrice}
+                    onChange={(e) =>
+                      setNewArea({
+                        ...newArea,
+                        truckPrice: parseInt(e.target.value) || 0,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Scooter Price (IDR)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Scooter delivery price"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newArea.scooterPrice}
+                    onChange={(e) =>
+                      setNewArea({
+                        ...newArea,
+                        scooterPrice: parseInt(e.target.value) || 0,
+                      })
+                    }
+                  />
+                </div>
               </div>
               <div className="flex gap-2 mt-4">
                 <button
@@ -259,7 +327,15 @@ const AreasManagement = () => {
                   Save Area
                 </button>
                 <button
-                  onClick={() => setIsAddingNew(false)}
+                  onClick={() => {
+                    setIsAddingNew(false);
+                    setNewArea({
+                      name: "",
+                      displayName: "",
+                      truckPrice: 0,
+                      scooterPrice: 0,
+                    });
+                  }}
                   className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
                 >
                   <X size={16} />
@@ -318,6 +394,10 @@ const AreaCard = ({
   }, [area]);
 
   const handleSave = () => {
+    if (!editData.name || !editData.displayName) {
+      alert("Please fill in required fields");
+      return;
+    }
     onSave(editData);
   };
 
@@ -325,46 +405,68 @@ const AreaCard = ({
     return (
       <div className="border border-gray-200 rounded-lg p-4 bg-blue-50">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <input
-            type="text"
-            value={editData.name}
-            onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Area name"
-          />
-          <input
-            type="text"
-            value={editData.displayName}
-            onChange={(e) =>
-              setEditData({ ...editData, displayName: e.target.value })
-            }
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Display name"
-          />
-          <input
-            type="number"
-            value={editData.truckPrice}
-            onChange={(e) =>
-              setEditData({
-                ...editData,
-                truckPrice: parseInt(e.target.value) || 0,
-              })
-            }
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Truck price"
-          />
-          <input
-            type="number"
-            value={editData.scooterPrice}
-            onChange={(e) =>
-              setEditData({
-                ...editData,
-                scooterPrice: parseInt(e.target.value) || 0,
-              })
-            }
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Scooter price"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Area Code
+            </label>
+            <input
+              type="text"
+              value={editData.name}
+              onChange={(e) =>
+                setEditData({ ...editData, name: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Area name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Display Name
+            </label>
+            <input
+              type="text"
+              value={editData.displayName}
+              onChange={(e) =>
+                setEditData({ ...editData, displayName: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Display name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Truck Price
+            </label>
+            <input
+              type="number"
+              value={editData.truckPrice}
+              onChange={(e) =>
+                setEditData({
+                  ...editData,
+                  truckPrice: parseInt(e.target.value) || 0,
+                })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Truck price"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Scooter Price
+            </label>
+            <input
+              type="number"
+              value={editData.scooterPrice}
+              onChange={(e) =>
+                setEditData({
+                  ...editData,
+                  scooterPrice: parseInt(e.target.value) || 0,
+                })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Scooter price"
+            />
+          </div>
         </div>
         <div className="flex gap-2">
           <button
@@ -419,6 +521,11 @@ const AreaCard = ({
               {formatRupiah(area.scooterPrice)}
             </span>
           </p>
+          {area.createdAt && (
+            <p className="text-xs text-gray-500 mt-2">
+              Added: {new Date(area.createdAt).toLocaleDateString()}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <button

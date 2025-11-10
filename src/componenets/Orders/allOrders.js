@@ -29,6 +29,22 @@ const OrderStatusFilters = [
   { id: "order-pickuped-up", label: "Picked up", color: "#bbf7d0" },
 ];
 
+// Helper function to format date safely
+const formatDate = (dateValue) => {
+  if (!dateValue) return "N/A";
+
+  try {
+    const date = new Date(dateValue);
+    // Check if date is valid
+    if (isNaN(date.getTime())) return "N/A";
+
+    return date.toLocaleString();
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "N/A";
+  }
+};
+
 export default function AllOrders() {
   const [orders, setOrders] = useState([]);
   const [total, setTotal] = useState(0);
@@ -58,10 +74,7 @@ export default function AllOrders() {
       params.set("limit", itemsPerPage);
 
       console.log("=== FRONTEND FETCHING ORDERS ===");
-      console.log(
-        "URL:",
-        `https://e-commchatbot-backend-4.onrender.com/api/orders?${params}`
-      );
+      console.log("URL:", `http://localhost:5000/api/orders?${params}`);
       console.log("Filters:", selectedFilters);
       console.log("Search:", searchQuery);
       console.log("Page:", currentPage);
@@ -69,7 +82,7 @@ export default function AllOrders() {
       try {
         // Fetch list of orders from the orders router
         const response = await axios.get(
-          `https://e-commchatbot-backend-4.onrender.com/api/orders?${params}`
+          `http://localhost:5000/api/orders?${params}`
         );
 
         console.log("=== API RESPONSE ===");
@@ -239,7 +252,7 @@ export default function AllOrders() {
                           {o.orderId}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
-                          {new Date(o.created || o.orderDate).toLocaleString()}
+                          {formatDate(o.orderDate || o.created || o.createdAt)}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900">
                           {o.customer || o.customerName || "N/A"}
