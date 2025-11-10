@@ -74,7 +74,10 @@ export default function AllOrders() {
       params.set("limit", itemsPerPage);
 
       console.log("=== FRONTEND FETCHING ORDERS ===");
-      console.log("URL:", `http://localhost:5000/api/orders?${params}`);
+      console.log(
+        "URL:",
+        `https://e-commchatbot-backend-4.onrender.com/api/orders?${params}`
+      );
       console.log("Filters:", selectedFilters);
       console.log("Search:", searchQuery);
       console.log("Page:", currentPage);
@@ -82,7 +85,7 @@ export default function AllOrders() {
       try {
         // Fetch list of orders from the orders router
         const response = await axios.get(
-          `http://localhost:5000/api/orders?${params}`
+          `https://e-commchatbot-backend-4.onrender.com/api/orders?${params}`
         );
 
         console.log("=== API RESPONSE ===");

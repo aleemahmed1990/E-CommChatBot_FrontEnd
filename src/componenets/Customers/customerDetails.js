@@ -45,7 +45,9 @@ const CustomerDetail = () => {
   const fetchCustomer = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/customers/${id}`);
+      const response = await fetch(
+        `https://e-commchatbot-backend-4.onrender.com/api/customers/${id}`
+      );
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error("Customer not found");
@@ -81,7 +83,7 @@ const CustomerDetail = () => {
       }
 
       const response = await fetch(
-        `http://localhost:5000/api/customers/${id}/orders?${params}`
+        `https://e-commchatbot-backend-4.onrender.com/api/customers/${id}/orders?${params}`
       );
       if (!response.ok) throw new Error("Failed to fetch orders");
 
@@ -97,7 +99,7 @@ const CustomerDetail = () => {
   const fetchChatHistory = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/customers/${id}/chat`
+        `https://e-commchatbot-backend-4.onrender.com/api/customers/${id}/chat`
       );
       if (!response.ok) throw new Error("Failed to fetch chat history");
 
@@ -125,7 +127,7 @@ const CustomerDetail = () => {
   const handleUpdateCustomer = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/customers/${id}`,
+        `https://e-commchatbot-backend-4.onrender.com/api/customers/${id}`,
         {
           method: "PUT",
           headers: {
@@ -155,8 +157,8 @@ const CustomerDetail = () => {
 
     try {
       const url = isBlocked
-        ? `http://localhost:5000/api/customers/${id}/unblock`
-        : `http://localhost:5000/api/customers/${id}`;
+        ? `https://e-commchatbot-backend-4.onrender.com/api/customers/${id}/unblock`
+        : `https://e-commchatbot-backend-4.onrender.com/api/customers/${id}`;
       const method = isBlocked ? "PUT" : "DELETE";
 
       const response = await fetch(url, { method });
@@ -175,7 +177,7 @@ const CustomerDetail = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/customers/${id}/notes`,
+        `https://e-commchatbot-backend-4.onrender.com/api/customers/${id}/notes`,
         {
           method: "POST",
           headers: {
