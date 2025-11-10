@@ -36,7 +36,7 @@ export default function VerificationView() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:5000/api/orders/${orderId}`)
+    fetch(`https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
@@ -69,7 +69,7 @@ export default function VerificationView() {
     setUpdating(true);
     try {
       const response = await fetch(
-        `http://localhost:5000/api/orders/${orderId}/status`,
+        `https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}/status`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -114,7 +114,7 @@ export default function VerificationView() {
     setUpdating(true);
     try {
       const response = await fetch(
-        `http://localhost:5000/api/orders/${orderId}/status`,
+        `https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}/status`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
