@@ -61,7 +61,7 @@ export default function TransactionControlView() {
 
       try {
         const listRes = await fetch(
-          `https://e-commchatbot-backend-4.onrender.com/api/orders?${params}`
+          `http://localhost:5000/api/orders?${params}`
         );
 
         console.log("Response status:", listRes.status);
@@ -95,28 +95,19 @@ export default function TransactionControlView() {
           );
         }
 
-        // ⭐ FILTER: Show only ONE order per customer (the one with largest amount)
-        const customerOrderMap = new Map();
-
-        listOrders.forEach((order) => {
-          const customerId = order.customerId;
-          const existingOrder = customerOrderMap.get(customerId);
-
-          if (!existingOrder || order.totalAmount > existingOrder.totalAmount) {
-            customerOrderMap.set(customerId, order);
-          }
+        // ⭐ SORT: Show all orders, with latest orders first (grouped by customer)
+        const sortedOrders = [...listOrders].sort((a, b) => {
+          const dateA = new Date(a.orderDate || a.created || 0);
+          const dateB = new Date(b.orderDate || b.created || 0);
+          return dateB - dateA; // Latest first
         });
 
-        // Convert map back to array
-        const filteredOrders = Array.from(customerOrderMap.values());
-
-        console.log("=== FILTERED TO ONE ORDER PER CUSTOMER ===");
-        console.log("Original orders:", listOrders.length);
-        console.log("Filtered orders:", filteredOrders.length);
+        console.log("=== ALL ORDERS SORTED BY DATE (LATEST FIRST) ===");
+        console.log("Total orders:", sortedOrders.length);
 
         // Orders should already have all required data from the fixed router
-        setOrders(filteredOrders);
-        setTotal(filteredOrders.length);
+        setOrders(sortedOrders);
+        setTotal(sortedOrders.length);
       } catch (error) {
         console.error("=== TRANSACTION CONTROL FETCH ERROR ===", error);
         setError(`Failed to fetch orders: ${error.message}`);

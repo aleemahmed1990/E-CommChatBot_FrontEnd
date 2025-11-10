@@ -1,4 +1,4 @@
-// src/components/views/BankAccountView.jsx
+// src/components/views/BankAccountView.jsx - FIXED VERSION
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../Sidebar/sidebar";
@@ -9,6 +9,8 @@ export default function BankAccountView() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // admin-editable
   const [textBox, setTextBox] = useState("");
@@ -17,10 +19,39 @@ export default function BankAccountView() {
   const [allocatedStatus, setAllocatedStatus] = useState("allocated");
 
   useEffect(() => {
-    fetch(`https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}`)
-      .then((r) => r.json())
-      .then(setOrder)
-      .catch(console.error);
+    const fetchOrder = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `http://localhost:5000/api/orders/${orderId}`
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Debug log to verify all fields
+        console.log("=== BANK ACCOUNT VIEW - ORDER DATA ===");
+        console.log("Order ID:", data.orderId);
+        console.log("Account Holder:", data.accountHolderName);
+        console.log("Bank Name:", data.paidBankName);
+        console.log("Transaction ID:", data.transactionId);
+        console.log("Receipt Image Present:", !!data.receiptImage);
+        console.log("Payment Status:", data.paymentStatus);
+
+        setOrder(data);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching order:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
   }, [orderId]);
 
   const handleSave = () => {
@@ -29,17 +60,29 @@ export default function BankAccountView() {
   };
 
   const getImageSource = () => {
-    if (!order || !order.receiptImage) return null;
+    if (!order || !order.receiptImage) {
+      console.log("No receipt image found in order data");
+      return null;
+    }
 
     const receipt = order.receiptImage;
+    console.log("Receipt data type:", typeof receipt);
 
-    if (typeof receipt === "string") return receipt;
+    if (typeof receipt === "string") {
+      console.log("Receipt is string URL");
+      return receipt;
+    }
 
     if (receipt.data) {
       if (typeof receipt.data === "string") {
-        if (receipt.data.startsWith("data:")) return receipt.data;
+        if (receipt.data.startsWith("data:")) {
+          console.log("Receipt is data URL");
+          return receipt.data;
+        }
         const contentType = receipt.contentType || "image/jpeg";
-        return `data:${contentType};base64,${receipt.data}`;
+        const base64Data = `data:${contentType};base64,${receipt.data}`;
+        console.log("Receipt converted to base64");
+        return base64Data;
       }
 
       if (Array.isArray(receipt.data)) {
@@ -48,7 +91,9 @@ export default function BankAccountView() {
           const base64String = btoa(
             receipt.data.map((byte) => String.fromCharCode(byte)).join("")
           );
-          return `data:${contentType};base64,${base64String}`;
+          const base64Data = `data:${contentType};base64,${base64String}`;
+          console.log("Receipt converted from byte array");
+          return base64Data;
         } catch (err) {
           console.error("Error converting image data:", err);
           return null;
@@ -56,15 +101,54 @@ export default function BankAccountView() {
       }
     }
 
-    if (typeof receipt.data === "string" && receipt.data.startsWith("data:")) {
-      return receipt.data;
-    }
-
     console.error("Unsupported receiptImage format:", receipt);
     return null;
   };
 
-  if (!order) return <div className="p-6">Loading…</div>;
+  // Helper function to safely get field value or show placeholder
+  const getFieldValue = (value, placeholder = "Not provided") => {
+    return value && String(value).trim() ? value : placeholder;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex">
+        <Sidebar isOpen={true} toggleSidebar={() => {}} />
+        <div className="ml-80 flex-1 bg-gray-50 p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="ml-4 text-gray-500">Loading order details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex">
+        <Sidebar isOpen={true} toggleSidebar={() => {}} />
+        <div className="ml-80 flex-1 bg-gray-50 p-6">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <strong>Error:</strong> {error}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="flex">
+        <Sidebar isOpen={true} toggleSidebar={() => {}} />
+        <div className="ml-80 flex-1 bg-gray-50 p-6">
+          <div className="text-center py-8">
+            <p className="text-gray-500">Order not found</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const receivedAt = new Date(order.orderDate).toLocaleTimeString([], {
     hour: "2-digit",
@@ -73,6 +157,11 @@ export default function BankAccountView() {
   const receivedDate = new Date(order.orderDate).toLocaleDateString();
 
   const imageSource = getImageSource();
+
+  // Extract payment fields with proper fallbacks
+  const accountHolder = getFieldValue(order.accountHolderName);
+  const bankName = getFieldValue(order.paidBankName);
+  const transactionId = getFieldValue(order.transactionId);
 
   return (
     <div className="flex">
@@ -119,7 +208,7 @@ export default function BankAccountView() {
                 <td className="py-3 px-4 text-sm">{receivedAt}</td>
                 <td className="py-3 px-4 text-sm">{receivedDate}</td>
                 <td className="py-3 px-4 text-sm">
-                  {order.customer || order.customerName}
+                  {getFieldValue(order.customer || order.customerName)}
                 </td>
                 <td className="py-3 px-4 text-sm">
                   <input
@@ -130,7 +219,9 @@ export default function BankAccountView() {
                     className="w-full border rounded p-1 text-sm"
                   />
                 </td>
-                <td className="py-3 px-4 text-sm">${order.totalAmount}</td>
+                <td className="py-3 px-4 text-sm font-medium">
+                  Rs. {order.totalAmount?.toLocaleString()}
+                </td>
                 <td className="py-3 px-4 text-sm">
                   <input
                     type="text"
@@ -184,28 +275,35 @@ export default function BankAccountView() {
                   <span className="font-medium">Date:</span> {receivedDate}
                 </div>
                 <div>
-                  <span className="font-medium">Bank:</span>{" "}
-                  {order.paidBankName || "Not provided"}
+                  <span className="font-medium">Bank:</span> {bankName}
                 </div>
                 <div>
                   <span className="font-medium">Account Holder:</span>{" "}
-                  {order.accountHolderName || "Not provided"}
+                  {accountHolder}
                 </div>
                 <div>
                   <span className="font-medium">Transaction ID:</span>{" "}
-                  {order.transactionId || "Not provided"}
+                  {transactionId}
                 </div>
                 <div>
                   <span className="font-medium">Payment Method:</span>{" "}
-                  {order.paymentMethod || "Bank Transfer"}
+                  {getFieldValue(order.paymentMethod, "Bank Transfer")}
                 </div>
                 <div>
-                  <span className="font-medium">Amount:</span> $
-                  {order.totalAmount}
+                  <span className="font-medium">Amount:</span> Rs.{" "}
+                  {order.totalAmount?.toLocaleString()}
                 </div>
                 <div>
                   <span className="font-medium">Payment Status:</span>{" "}
-                  {order.paymentStatus || "Pending"}
+                  <span
+                    className={
+                      order.paymentStatus === "paid"
+                        ? "text-green-600 font-semibold"
+                        : "text-orange-600 font-semibold"
+                    }
+                  >
+                    {getFieldValue(order.paymentStatus, "Pending")}
+                  </span>
                 </div>
               </div>
 
@@ -243,10 +341,10 @@ export default function BankAccountView() {
                       {order.timeSlot}
                     </div>
                   )}
-                  {order.deliveryCharge > 0 && (
+                  {order.deliveryCharge && order.deliveryCharge > 0 && (
                     <div>
-                      <span className="font-medium">Delivery Charge:</span> $
-                      {order.deliveryCharge}
+                      <span className="font-medium">Delivery Charge:</span> Rs.
+                      {order.deliveryCharge?.toLocaleString()}
                     </div>
                   )}
                   {order.deliveryAddress && (
@@ -289,15 +387,15 @@ export default function BankAccountView() {
                 <div className="space-y-1">
                   <div>
                     <span className="font-medium">Name:</span>{" "}
-                    {order.customer || order.customerName}
+                    {getFieldValue(order.customer || order.customerName)}
                   </div>
                   <div>
                     <span className="font-medium">Phone:</span>{" "}
-                    {order.phoneNumber || order.customerPhone}
+                    {getFieldValue(order.phoneNumber || order.customerPhone)}
                   </div>
                   <div>
                     <span className="font-medium">Customer ID:</span>{" "}
-                    {order.customerId}
+                    {getFieldValue(order.customerId)}
                   </div>
                 </div>
               </div>
@@ -324,6 +422,10 @@ export default function BankAccountView() {
                   src={imageSource}
                   alt="receipt"
                   className="object-contain h-full w-full"
+                  onError={(e) => {
+                    console.error("Image failed to load");
+                    e.target.style.display = "none";
+                  }}
                 />
               ) : (
                 <div className="flex flex-col items-center text-gray-400">
@@ -334,20 +436,19 @@ export default function BankAccountView() {
             </div>
             <div className="text-gray-700 text-sm space-y-2 mb-4 bg-gray-50 p-4 rounded">
               <div>
-                <span className="font-medium">Bank:</span>{" "}
-                {order.paidBankName || "Not provided"}
+                <span className="font-medium">Bank:</span> {bankName}
               </div>
               <div>
                 <span className="font-medium">Account Holder:</span>{" "}
-                {order.accountHolderName || "Not provided"}
+                {accountHolder}
               </div>
               <div>
-                <span className="font-medium">Amount:</span> $
-                {order.totalAmount}
+                <span className="font-medium">Amount:</span> Rs.
+                {order.totalAmount?.toLocaleString()}
               </div>
               <div>
                 <span className="font-medium">Transaction ID:</span>{" "}
-                {order.transactionId || "Not provided"}
+                {transactionId}
               </div>
             </div>
             <button

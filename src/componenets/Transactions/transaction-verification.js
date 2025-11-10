@@ -1,4 +1,4 @@
-// src/components/views/VerificationView.jsx
+// src/components/views/VerificationView.jsx - FIXED VERSION
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../Sidebar/sidebar";
@@ -36,7 +36,7 @@ export default function VerificationView() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}`)
+    fetch(`http://localhost:5000/api/orders/${orderId}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error(`Error ${res.status}: ${res.statusText}`);
@@ -44,7 +44,15 @@ export default function VerificationView() {
         return res.json();
       })
       .then((data) => {
-        console.log("Received order data:", data);
+        console.log("=== VERIFICATION VIEW - ORDER DATA ===");
+        console.log("Order ID:", data.orderId);
+        console.log("Account Holder:", data.accountHolderName);
+        console.log("Bank Name:", data.paidBankName);
+        console.log("Transaction ID:", data.transactionId);
+        console.log("Receipt Image:", !!data.receiptImage);
+        console.log("Customer:", data.customer || data.customerName);
+        console.log("Phone:", data.phoneNumber || data.customerPhone);
+
         setOrder(data);
         setLoading(false);
       })
@@ -61,7 +69,7 @@ export default function VerificationView() {
     setUpdating(true);
     try {
       const response = await fetch(
-        `https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}/status`,
+        `http://localhost:5000/api/orders/${orderId}/status`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -106,7 +114,7 @@ export default function VerificationView() {
     setUpdating(true);
     try {
       const response = await fetch(
-        `https://e-commchatbot-backend-4.onrender.com/api/orders/${orderId}/status`,
+        `http://localhost:5000/api/orders/${orderId}/status`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -139,7 +147,10 @@ export default function VerificationView() {
   };
 
   const getImageSource = () => {
-    if (!order || !order.receiptImage) return null;
+    if (!order || !order.receiptImage) {
+      console.log("No receipt image found");
+      return null;
+    }
 
     try {
       if (typeof order.receiptImage === "string") {
@@ -195,6 +206,11 @@ export default function VerificationView() {
     return `Rs. ${amount || "0"}`;
   };
 
+  // Helper to safely get field value
+  const getFieldValue = (value, placeholder = "Not provided") => {
+    return value && String(value).trim() ? value : placeholder;
+  };
+
   if (loading) {
     return (
       <div className="flex">
@@ -237,6 +253,16 @@ export default function VerificationView() {
   }
 
   const imageSource = getImageSource();
+
+  // Extract payment fields with safe fallbacks
+  const accountHolder = getFieldValue(order.accountHolderName);
+  const bankName = getFieldValue(order.paidBankName);
+  const transactionId = getFieldValue(order.transactionId);
+  const customerName = getFieldValue(order.customer || order.customerName);
+  const customerPhone = getFieldValue(
+    order.phoneNumber || order.customerPhone,
+    "N/A"
+  );
 
   return (
     <div className="flex">
@@ -281,7 +307,7 @@ export default function VerificationView() {
             <div className="text-center min-w-[100px]">
               <User className="h-12 w-12 text-gray-500 mx-auto" />
               <p className="mt-2 text-gray-600 text-xs font-medium">
-                {order.customer || order.customerName}
+                {customerName}
               </p>
               <p className="text-gray-600 text-xs">Order: {order.orderId}</p>
               <p className="text-gray-500 text-xs">
@@ -338,19 +364,18 @@ export default function VerificationView() {
                 <div className="text-sm text-gray-600 space-y-1 bg-gray-50 p-3 rounded">
                   <p>
                     <span className="font-medium">Account Holder:</span>{" "}
-                    {order.accountHolderName || "Not provided"}
+                    {accountHolder}
                   </p>
                   <p>
-                    <span className="font-medium">Bank:</span>{" "}
-                    {order.paidBankName || "Not provided"}
+                    <span className="font-medium">Bank:</span> {bankName}
                   </p>
                   <p>
                     <span className="font-medium">Transaction ID:</span>{" "}
-                    {order.transactionId || "Not provided"}
+                    {transactionId}
                   </p>
                   <p>
                     <span className="font-medium">Payment Method:</span>{" "}
-                    {order.paymentMethod || "Bank Transfer"}
+                    {getFieldValue(order.paymentMethod, "Bank Transfer")}
                   </p>
                   <p>
                     <span className="font-medium">Status:</span>
@@ -490,16 +515,17 @@ export default function VerificationView() {
                   <span className="ml-2 text-gray-600">{order.timeSlot}</span>
                 </div>
               )}
-              {order.deliveryCharge !== undefined && (
-                <div>
-                  <span className="font-medium text-gray-700">
-                    Delivery Charge:
-                  </span>
-                  <span className="ml-2 text-gray-600">
-                    {formatCurrency(order.deliveryCharge)}
-                  </span>
-                </div>
-              )}
+              {order.deliveryCharge !== undefined &&
+                order.deliveryCharge > 0 && (
+                  <div>
+                    <span className="font-medium text-gray-700">
+                      Delivery Charge:
+                    </span>
+                    <span className="ml-2 text-gray-600">
+                      {formatCurrency(order.deliveryCharge)}
+                    </span>
+                  </div>
+                )}
               {order.deliveryLocation && (
                 <div className="col-span-2">
                   <span className="font-medium text-gray-700">Location:</span>
@@ -611,21 +637,21 @@ export default function VerificationView() {
                 </span>
               </div>
 
-              {order.deliveryCharge > 0 && (
+              {order.deliveryCharge && order.deliveryCharge > 0 && (
                 <div className="flex justify-between text-gray-600">
                   <span>Delivery Fee:</span>
                   <span>{formatCurrency(order.deliveryCharge)}</span>
                 </div>
               )}
 
-              {order.ecoDeliveryDiscount > 0 && (
+              {order.ecoDeliveryDiscount && order.ecoDeliveryDiscount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Eco Delivery Discount:</span>
                   <span>-{formatCurrency(order.ecoDeliveryDiscount)}</span>
                 </div>
               )}
 
-              {order.firstOrderDiscount > 0 && (
+              {order.firstOrderDiscount && order.firstOrderDiscount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>First Order Discount:</span>
                   <span>-{formatCurrency(order.firstOrderDiscount)}</span>
@@ -650,20 +676,16 @@ export default function VerificationView() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="font-medium text-gray-700">Name:</span>
-                <span className="ml-2 text-gray-600">
-                  {order.customer || order.customerName}
-                </span>
+                <span className="ml-2 text-gray-600">{customerName}</span>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Phone:</span>
-                <span className="ml-2 text-gray-600">
-                  {order.phoneNumber || order.customerPhone}
-                </span>
+                <span className="ml-2 text-gray-600">{customerPhone}</span>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Customer ID:</span>
                 <span className="ml-2 text-gray-600 text-xs">
-                  {order.customerId}
+                  {getFieldValue(order.customerId)}
                 </span>
               </div>
               <div>
