@@ -1,4 +1,4 @@
-// src/components/views/TransactionControlView.jsx
+// src/components/views/TransactionControlView.jsx - FIXED VERSION
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../Sidebar/sidebar";
@@ -19,10 +19,13 @@ import {
 export default function TransactionControlView() {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // ✅ FIX #1: ONLY show "pay-not-confirmed" orders by default
   const [selectedTypes, setSelectedTypes] = useState({
-    "order-made-not-paid": true,
-    "pay-not-confirmed": false,
+    "order-made-not-paid": false, // ✅ CHANGED: Disabled by default
+    "pay-not-confirmed": true, // ✅ CHANGED: Enabled by default (ONLY this)
   });
+
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
