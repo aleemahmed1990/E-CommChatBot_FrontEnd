@@ -1,261 +1,223 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Package,
-  Building,
-  Truck,
-  User,
-  Phone,
-  FileText,
   Navigation,
   CheckCircle,
   AlertTriangle,
-  Camera,
   MapPin,
+  Phone,
+  X,
+  Camera,
   Clock,
-  Upload,
-  Star,
 } from "lucide-react";
 
 const API_BASE_URL = "https://e-commchatbot-backend-4.onrender.com";
 
-const DriverOnDeliveryDashboard = ({ selectedRole, setSelectedRole }) => {
+const DriverOnDeliveryDashboard = () => {
   const [activeDeliveries, setActiveDeliveries] = useState([]);
-  const [currentDelivery, setCurrentDelivery] = useState(null);
-  const [stats, setStats] = useState({
-    totalDeliveries: 0,
-    completed: 0,
-    inProgress: 0,
-    estimatedTime: "0h",
-  });
+  const [selectedDelivery, setSelectedDelivery] = useState(null);
+  const [deliveryDetails, setDeliveryDetails] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
-  const [deliveryPhoto, setDeliveryPhoto] = useState(null);
+  const [stats, setStats] = useState({
+    onWay: 0,
+    nearby: 0,
+    delivered: 0,
+    failed: 0,
+  });
+  const [driverLocation, setDriverLocation] = useState(null);
+  const [customerOTP, setCustomerOTP] = useState("");
+  const [proofOfDelivery, setProofOfDelivery] = useState(null);
   const [deliveryNotes, setDeliveryNotes] = useState("");
-  const [customerSatisfaction, setCustomerSatisfaction] = useState(5);
-  const [customerConfirmed, setCustomerConfirmed] = useState(false);
+  const [showComplaintForm, setShowComplaintForm] = useState(false);
+  const [complaintData, setComplaintData] = useState({ type: "", details: "" });
+  const updateTimeoutRef = useRef(null);
 
-  const roleButtons = [
-    {
-      name: "Order Overview",
-      icon: Package,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Packing Staff",
-      icon: Package,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Delivery Storage Officer",
-      icon: Building,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Dispatch Officer 1",
-      icon: User,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Dispatch Officer 2",
-      icon: User,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Driver",
-      icon: Truck,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Driver on Delivery",
-      icon: Navigation,
-      active: true,
-      color: "bg-gray-800 text-white",
-    },
-  ];
-
-  const secondRowRoles = [
-    {
-      name: "Complaint Manager on Delivery",
-      icon: Phone,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Complaint Manager After Delivery",
-      icon: FileText,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-  ];
+  const DRIVER_ID = localStorage.getItem("driverId") || "DRIVER_001";
 
   useEffect(() => {
+    watchLocation();
     fetchActiveDeliveries();
     fetchStats();
-    const interval = setInterval(() => {
-      fetchActiveDeliveries();
-      fetchStats();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
-  useEffect(() => {
-    if (activeDeliveries.length > 0 && !currentDelivery) {
-      // Auto-select first delivery
-      setCurrentDelivery(activeDeliveries[0]);
+    const interval = setInterval(() => {
+      watchLocation();
+      fetchActiveDeliveriesQuiet();
+      fetchStatsQuiet();
+      if (selectedDelivery) {
+        fetchDeliveryDetailsQuiet(selectedDelivery);
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
+    };
+  }, [selectedDelivery]);
+
+  const watchLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        setDriverLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      });
     }
-  }, [activeDeliveries]);
+  };
 
   const fetchActiveDeliveries = async () => {
     try {
+      setLoading(true);
       const response = await fetch(
-        `${API_BASE_URL}/api/driver-on-delivery/active-deliveries`
+        `${API_BASE_URL}/api/driver-delivery/active/${DRIVER_ID}`
       );
       const data = await response.json();
-      setActiveDeliveries(data);
+      setActiveDeliveries(data || []);
     } catch (error) {
-      console.error("Error fetching active deliveries:", error);
+      console.error("Error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchActiveDeliveriesQuiet = async () => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/driver-delivery/active/${DRIVER_ID}`
+      );
+      const data = await response.json();
+      setActiveDeliveries((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(data)) {
+          return data || [];
+        }
+        return prev;
+      });
+    } catch (error) {
+      console.error("Error:", error);
     }
   };
 
   const fetchStats = async () => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/driver-on-delivery/stats`
+        `${API_BASE_URL}/api/driver-delivery/stats/${DRIVER_ID}`
       );
       const data = await response.json();
       setStats(data);
     } catch (error) {
-      console.error("Error fetching stats:", error);
+      console.error("Error:", error);
     }
   };
 
-  const handleMarkArrived = async () => {
-    if (!currentDelivery) return;
-
+  const fetchStatsQuiet = async () => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/driver-on-delivery/mark-arrived/${currentDelivery.orderId}`,
+        `${API_BASE_URL}/api/driver-delivery/stats/${DRIVER_ID}`
+      );
+      const data = await response.json();
+      setStats(data);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  const fetchDeliveryDetails = async (orderId) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/driver-delivery/order/${orderId}`
+      );
+      const data = await response.json();
+      setDeliveryDetails(data);
+      setSelectedDelivery(orderId);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  const fetchDeliveryDetailsQuiet = async (orderId) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/driver-delivery/order/${orderId}`
+      );
+      const data = await response.json();
+      setDeliveryDetails((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(data)) {
+          return data;
+        }
+        return prev;
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  const markNearby = async () => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/driver-delivery/nearby/${selectedDelivery}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            driverId: "DR_001",
-            driverName: "Driver",
-            location: {
-              address: currentDelivery.deliveryAddress?.fullAddress || "",
+            driverId: DRIVER_ID,
+            location: driverLocation,
+            nearbyNotification: {
+              sentAt: new Date(),
+              customerNotified: true,
             },
           }),
         }
       );
 
       if (response.ok) {
-        alert("Marked as arrived successfully!");
+        alert("Customer notified - You are nearby!");
         fetchActiveDeliveries();
+        fetchDeliveryDetails(selectedDelivery);
+        fetchStats();
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error marking as arrived:", error);
-      alert("Failed to mark as arrived");
+      console.error("Error:", error);
+      alert("Failed to update status");
     }
   };
 
-  const handlePhotoUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setDeliveryPhoto({
-          file: file,
-          base64: e.target.result.split(",")[1],
-          preview: e.target.result,
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadDeliveryPhoto = async () => {
-    if (!deliveryPhoto || !currentDelivery) return;
-
-    try {
-      const formData = new FormData();
-      formData.append("deliveryPhoto", deliveryPhoto.file);
-      formData.append("driverId", "DR_001");
-      formData.append("driverName", "Driver");
-      formData.append("notes", deliveryNotes);
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/driver-on-delivery/upload-delivery-photo/${currentDelivery.orderId}`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (response.ok) {
-        alert("Delivery photo uploaded successfully!");
-        setShowPhotoUpload(false);
-        setDeliveryPhoto(null);
-        setDeliveryNotes("");
-        fetchActiveDeliveries();
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.error}`);
-      }
-    } catch (error) {
-      console.error("Error uploading photo:", error);
-      alert("Failed to upload photo");
-    }
-  };
-
-  const handleCompleteDelivery = async () => {
-    if (!currentDelivery) return;
-
-    if (
-      !currentDelivery.deliveryPhotos ||
-      currentDelivery.deliveryPhotos.length === 0
-    ) {
-      alert("Please upload a delivery photo before completing the delivery!");
-      return;
-    }
-
-    if (!customerConfirmed) {
-      alert("Please confirm that the customer has received the delivery!");
+  const markDelivered = async () => {
+    if (!customerOTP) {
+      alert("Please enter customer OTP");
       return;
     }
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/driver-on-delivery/complete-delivery/${currentDelivery.orderId}`,
+        `${API_BASE_URL}/api/driver-delivery/delivered/${selectedDelivery}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            driverId: "DR_001",
-            driverName: "Driver",
-            customerConfirmed: customerConfirmed,
+            driverId: DRIVER_ID,
+            customerOTP: customerOTP,
             deliveryNotes: deliveryNotes,
-            customerSatisfaction: customerSatisfaction,
+            location: driverLocation,
+            proofOfDelivery: proofOfDelivery,
+            verificationDetails: {
+              otpVerified: true,
+              photoCapture: !!proofOfDelivery,
+              customerVerified: true,
+              deliveredAt: new Date(),
+            },
           }),
         }
       );
 
       if (response.ok) {
-        alert("Delivery completed successfully!");
-        setCurrentDelivery(null);
-        setCustomerConfirmed(false);
+        alert("Delivery marked as complete!");
+        setSelectedDelivery(null);
+        setDeliveryDetails(null);
+        setCustomerOTP("");
         setDeliveryNotes("");
-        setCustomerSatisfaction(5);
+        setProofOfDelivery(null);
         fetchActiveDeliveries();
         fetchStats();
       } else {
@@ -263,415 +225,408 @@ const DriverOnDeliveryDashboard = ({ selectedRole, setSelectedRole }) => {
         alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error completing delivery:", error);
-      alert("Failed to complete delivery");
+      console.error("Error:", error);
+      alert("Failed to mark delivery");
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Loading Driver on Delivery Dashboard
-          </h2>
-          <p className="text-gray-600">Fetching active deliveries...</p>
-        </div>
-      </div>
-    );
-  }
+  const markFailed = async () => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/driver-delivery/failed/${selectedDelivery}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            driverId: DRIVER_ID,
+            reason: deliveryNotes || "Customer not available",
+            location: driverLocation,
+            failureDetails: {
+              failedAt: new Date(),
+              reason: deliveryNotes,
+              needsReschedule: true,
+            },
+          }),
+        }
+      );
+
+      if (response.ok) {
+        alert("Delivery marked as failed");
+        setSelectedDelivery(null);
+        setDeliveryDetails(null);
+        setDeliveryNotes("");
+        fetchActiveDeliveries();
+        fetchStats();
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Failed to mark delivery");
+    }
+  };
+
+  const registerComplaint = async () => {
+    if (!complaintData.type) {
+      alert("Select complaint type");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/driver-delivery/complaint/${selectedDelivery}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            complaintType: complaintData.type,
+            details: complaintData.details,
+            reportedBy: DRIVER_ID,
+            timestamp: new Date(),
+          }),
+        }
+      );
+
+      if (response.ok) {
+        alert("Complaint registered!");
+        setShowComplaintForm(false);
+        setComplaintData({ type: "", details: "" });
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Failed to register complaint");
+    }
+  };
+
+  const handleImageCapture = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProofOfDelivery(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="p-6">
-        {/* Title */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-            Delivery Management System
-          </h1>
-          <p className="text-gray-600">
-            Complete workflow management from packing to delivery confirmation
+    <div className="space-y-6">
+      {/* Location */}
+      {driverLocation && (
+        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <p className="text-sm">
+            📍 <strong>Current Location:</strong>{" "}
+            {driverLocation.latitude.toFixed(4)},{" "}
+            {driverLocation.longitude.toFixed(4)}
           </p>
         </div>
+      )}
 
-        {/* Role Selection */}
-        <div className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">
-            Select Role
-          </h2>
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-3">
-              {roleButtons.map((role, index) => {
-                const IconComponent = role.icon;
-                return (
-                  <button
-                    key={index}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      role.name === selectedRole
-                        ? "bg-gray-800 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                    onClick={() => setSelectedRole(role.name)}
-                  >
-                    <IconComponent className="h-4 w-4" />
-                    <span>{role.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              {secondRowRoles.map((role, index) => {
-                const IconComponent = role.icon;
-                return (
-                  <button
-                    key={index}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      role.name === selectedRole
-                        ? "bg-gray-800 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                    onClick={() => setSelectedRole(role.name)}
-                  >
-                    <IconComponent className="h-4 w-4" />
-                    <span>{role.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-blue-600 rounded-lg p-4 text-white">
+          <p className="text-sm opacity-90">On Way</p>
+          <p className="text-3xl font-bold mt-1">{stats.onWay}</p>
         </div>
+        <div className="bg-yellow-600 rounded-lg p-4 text-white">
+          <p className="text-sm opacity-90">Nearby</p>
+          <p className="text-3xl font-bold mt-1">{stats.nearby}</p>
+        </div>
+        <div className="bg-green-600 rounded-lg p-4 text-white">
+          <p className="text-sm opacity-90">Delivered</p>
+          <p className="text-3xl font-bold mt-1">{stats.delivered}</p>
+        </div>
+        <div className="bg-red-600 rounded-lg p-4 text-white">
+          <p className="text-sm opacity-90">Failed</p>
+          <p className="text-3xl font-bold mt-1">{stats.failed}</p>
+        </div>
+      </div>
 
-        {/* Dashboard Content */}
-        <div>
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Driver on Delivery Dashboard
-            </h2>
-            <p className="text-gray-600">
-              Manage deliveries and customer confirmations
-            </p>
+      {/* Main */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* List */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="bg-gray-800 text-white p-4 flex items-center space-x-2 rounded-t-lg">
+            <Navigation className="h-5 w-5" />
+            <h3 className="font-bold">Active Deliveries</h3>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
-            <div className="flex items-center">
-              <AlertTriangle className="h-5 w-5 text-blue-600 mr-2" />
-              <span className="text-sm text-blue-800">
-                Take photo/video of receiver for verification. Customer must
-                confirm delivery while you're present.
-              </span>
+          {loading ? (
+            <div className="p-8 text-center text-gray-500">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             </div>
-          </div>
-
-          {/* Today's Deliveries Stats */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-3">
-              Today's Deliveries
-            </h3>
-            <div className="grid grid-cols-4 gap-4 text-center">
-              <div className="border-r border-gray-200 pr-4">
-                <div className="text-2xl font-bold">
-                  {stats.totalDeliveries}
+          ) : activeDeliveries.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              <p>No active deliveries</p>
+            </div>
+          ) : (
+            <div className="divide-y max-h-96 overflow-y-auto">
+              {activeDeliveries.map((delivery) => (
+                <div
+                  key={delivery._id}
+                  onClick={() => fetchDeliveryDetails(delivery.orderId)}
+                  className={`p-4 cursor-pointer hover:bg-gray-50 transition ${
+                    selectedDelivery === delivery.orderId
+                      ? "bg-blue-50 border-l-4 border-blue-500"
+                      : ""
+                  }`}
+                >
+                  <p className="font-semibold text-gray-900 text-sm">
+                    {delivery.orderId}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {delivery.customerName}
+                  </p>
+                  <p className="text-xs text-gray-600 flex items-center space-x-1 mt-1">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      {new Date(delivery.createdAt).toLocaleTimeString()}
+                    </span>
+                  </p>
+                  <span className="inline-block mt-2 px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded">
+                    {delivery.status?.replace(/-/g, " ")}
+                  </span>
                 </div>
-                <div className="text-sm text-gray-600">Total Deliveries</div>
-              </div>
-              <div className="border-r border-gray-200 pr-4">
-                <div className="text-2xl font-bold">{stats.completed}</div>
-                <div className="text-sm text-gray-600">Completed</div>
-              </div>
-              <div className="border-r border-gray-200 pr-4">
-                <div className="text-2xl font-bold">{stats.inProgress}</div>
-                <div className="text-sm text-gray-600">In Progress</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{stats.estimatedTime}</div>
-                <div className="text-sm text-gray-600">Est. Time</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Delivery Selection */}
-          {activeDeliveries.length > 0 && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-3">
-                Select Active Delivery
-              </h3>
-              <div className="space-y-2">
-                {activeDeliveries.map((delivery, index) => (
-                  <button
-                    key={index}
-                    className={`w-full text-left p-3 rounded border ${
-                      currentDelivery?.orderId === delivery.orderId
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    onClick={() => setCurrentDelivery(delivery)}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="font-medium">{delivery.orderId}</div>
-                        <div className="text-sm text-gray-600">
-                          {delivery.customerName}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {delivery.deliveryAddress?.area}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium">
-                          {delivery.isArrived ? "Arrived" : "En Route"}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {delivery.totalItems} items
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
           )}
+        </div>
 
-          {/* Current Delivery Details */}
-          {currentDelivery ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-lg font-medium text-gray-900">
-                  {currentDelivery.orderId}
+        {/* Details */}
+        <div className="lg:col-span-2">
+          {selectedDelivery && deliveryDetails ? (
+            <div className="bg-white rounded-lg shadow p-6 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {deliveryDetails.orderId}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {deliveryDetails.customerName}
+                  </p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  {currentDelivery.isArrived && (
-                    <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-800">
-                      Arrived
-                    </span>
-                  )}
-                  {currentDelivery.deliveryPhotos &&
-                    currentDelivery.deliveryPhotos.length > 0 && (
-                      <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800">
-                        Photo Uploaded
-                      </span>
-                    )}
+                <button
+                  onClick={() => setSelectedDelivery(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Contact */}
+              <div className="bg-blue-50 p-4 rounded">
+                <h4 className="font-bold text-gray-900 mb-3">
+                  Contact & Address
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <p className="flex items-center space-x-2">
+                    <Phone className="h-4 w-4" />
+                    <a
+                      href={`tel:${deliveryDetails.customerPhone}`}
+                      className="text-blue-600 hover:underline"
+                    >
+                      {deliveryDetails.customerPhone}
+                    </a>
+                  </p>
+                  <p className="flex items-start space-x-2">
+                    <MapPin className="h-4 w-4 mt-1" />
+                    <span>{deliveryDetails.deliveryAddress}</span>
+                  </p>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <div className="font-medium text-gray-900">
-                    {currentDelivery.customerName}
-                  </div>
-                  <div className="text-sm text-gray-600 flex items-center">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    {currentDelivery.deliveryAddress?.fullAddress ||
-                      currentDelivery.deliveryAddress?.area}
-                  </div>
+              {/* Items */}
+              <div className="border-t pt-4">
+                <h4 className="font-bold text-gray-900 mb-3">Items</h4>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {deliveryDetails.items?.map((item, idx) => (
+                    <div key={idx} className="bg-gray-50 p-2 rounded text-sm">
+                      <p className="font-semibold text-gray-900">
+                        {item.productName}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        Qty: {item.quantity}
+                      </p>
+                    </div>
+                  ))}
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
+              {/* OTP */}
+              {deliveryDetails.status !== "order-complete" && (
+                <>
+                  <div className="border-t pt-4">
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Customer OTP
+                    </label>
+                    <input
+                      type="text"
+                      value={customerOTP}
+                      onChange={(e) =>
+                        setCustomerOTP(e.target.value.slice(0, 6))
+                      }
+                      placeholder="Enter OTP"
+                      maxLength="6"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-lg font-bold tracking-widest"
+                    />
+                  </div>
+
                   <div>
-                    <div className="text-sm text-gray-500">Phone:</div>
-                    <div className="text-sm text-gray-900 flex items-center">
-                      <Phone className="h-4 w-4 mr-1" />
-                      {currentDelivery.customerPhone}
-                    </div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Delivery Notes
+                    </label>
+                    <textarea
+                      value={deliveryNotes}
+                      onChange={(e) => setDeliveryNotes(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows="2"
+                      placeholder="Special notes..."
+                    />
                   </div>
+
                   <div>
-                    <div className="text-sm text-gray-500">Items:</div>
-                    <div className="text-sm text-gray-900">
-                      {currentDelivery.totalItems} items
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Proof of Delivery
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <label className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition cursor-pointer">
+                        <Camera className="h-4 w-4" />
+                        <span>Capture</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleImageCapture}
+                          className="hidden"
+                        />
+                      </label>
+                      {proofOfDelivery && (
+                        <span className="text-xs text-green-600">
+                          ✓ Captured
+                        </span>
+                      )}
                     </div>
                   </div>
+                </>
+              )}
+
+              {/* Amount */}
+              <div className="bg-green-50 p-4 rounded">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-gray-900">Amount:</span>
+                  <span className="text-xl font-bold text-green-600">
+                    PKR {deliveryDetails.totalAmount?.toFixed(2) || "0.00"}
+                  </span>
                 </div>
+              </div>
 
-                <div>
-                  <div className="text-sm text-gray-500">Estimated Time:</div>
-                  <div className="text-sm text-gray-900 flex items-center">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {new Date(currentDelivery.deliveryDate).toLocaleString()}
-                  </div>
-                </div>
-
-                {currentDelivery.specialInstructions && (
-                  <div className="pt-4 border-t border-gray-200">
-                    <div className="text-sm text-gray-500 mb-1">
-                      Special Instructions:
-                    </div>
-                    <div className="text-sm text-gray-900 bg-yellow-50 p-2 rounded">
-                      {currentDelivery.specialInstructions}
-                    </div>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="pt-4 border-t border-gray-200 space-y-3">
-                  {!currentDelivery.isArrived && (
-                    <button
-                      onClick={handleMarkArrived}
-                      className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
-                    >
-                      <MapPin className="h-4 w-4 mr-2" />
-                      Mark as Arrived
-                    </button>
-                  )}
-
-                  {currentDelivery.isArrived && (
-                    <>
-                      {/* Photo Upload Section */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">
-                            Delivery Verification Photo
-                          </span>
-                          {currentDelivery.deliveryPhotos &&
-                          currentDelivery.deliveryPhotos.length > 0 ? (
-                            <span className="text-xs text-green-600">
-                              ✓ Photo uploaded
-                            </span>
-                          ) : (
-                            <span className="text-xs text-red-600">
-                              Photo required
-                            </span>
-                          )}
-                        </div>
-
-                        {(!currentDelivery.deliveryPhotos ||
-                          currentDelivery.deliveryPhotos.length === 0) && (
-                          <div className="space-y-2">
-                            <input
-                              type="file"
-                              accept="image/*,video/*"
-                              onChange={handlePhotoUpload}
-                              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                            />
-
-                            {deliveryPhoto && (
-                              <div className="space-y-2">
-                                <img
-                                  src={deliveryPhoto.preview}
-                                  alt="Delivery verification"
-                                  className="w-full h-48 object-cover rounded border"
-                                />
-                                <textarea
-                                  value={deliveryNotes}
-                                  onChange={(e) =>
-                                    setDeliveryNotes(e.target.value)
-                                  }
-                                  placeholder="Add delivery notes (optional)"
-                                  className="w-full p-2 border border-gray-300 rounded text-sm"
-                                  rows="2"
-                                />
-                                <button
-                                  onClick={uploadDeliveryPhoto}
-                                  className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center justify-center"
-                                >
-                                  <Upload className="h-4 w-4 mr-2" />
-                                  Upload Photo
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Customer Confirmation */}
-                      {currentDelivery.deliveryPhotos &&
-                        currentDelivery.deliveryPhotos.length > 0 && (
-                          <div className="space-y-3">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id="customerConfirmed"
-                                checked={customerConfirmed}
-                                onChange={(e) =>
-                                  setCustomerConfirmed(e.target.checked)
-                                }
-                                className="rounded"
-                              />
-                              <label
-                                htmlFor="customerConfirmed"
-                                className="text-sm"
-                              >
-                                Customer confirmed receipt of delivery
-                              </label>
-                            </div>
-
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">
-                                Customer Satisfaction (1-5 stars):
-                              </label>
-                              <div className="flex space-x-1">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <button
-                                    key={star}
-                                    onClick={() =>
-                                      setCustomerSatisfaction(star)
-                                    }
-                                    className={`p-1 ${
-                                      star <= customerSatisfaction
-                                        ? "text-yellow-400"
-                                        : "text-gray-300"
-                                    }`}
-                                  >
-                                    <Star className="h-5 w-5 fill-current" />
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <textarea
-                              value={deliveryNotes}
-                              onChange={(e) => setDeliveryNotes(e.target.value)}
-                              placeholder="Final delivery notes (optional)"
-                              className="w-full p-2 border border-gray-300 rounded text-sm"
-                              rows="2"
-                            />
-
-                            <button
-                              onClick={handleCompleteDelivery}
-                              disabled={!customerConfirmed}
-                              className={`w-full py-3 rounded-md transition-colors flex items-center justify-center ${
-                                customerConfirmed
-                                  ? "bg-green-600 text-white hover:bg-green-700"
-                                  : "bg-gray-400 text-gray-200 cursor-not-allowed"
-                              }`}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Complete Delivery
-                            </button>
-                          </div>
-                        )}
-                    </>
-                  )}
-                </div>
+              {/* Actions */}
+              <div className="border-t pt-4 flex flex-col space-y-2">
+                <button
+                  onClick={markNearby}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                >
+                  <MapPin className="h-4 w-4" />
+                  <span>I'm Nearby</span>
+                </button>
+                <button
+                  onClick={markDelivered}
+                  disabled={!customerOTP}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Delivery Complete</span>
+                </button>
+                <button
+                  onClick={markFailed}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>Mark as Failed</span>
+                </button>
+                <button
+                  onClick={() => setShowComplaintForm(true)}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>Report Issue</span>
+                </button>
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-              {activeDeliveries.length === 0 ? (
-                <>
-                  <Navigation className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    No Active Deliveries
-                  </h3>
-                  <p className="text-gray-600">
-                    All deliveries have been completed. Great work!
-                  </p>
-                </>
-              ) : (
-                <>
-                  <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Select a Delivery
-                  </h3>
-                  <p className="text-gray-600">
-                    Choose a delivery from the list above to start processing.
-                  </p>
-                </>
-              )}
+            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+              <Navigation className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>Select a delivery to view details</p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Complaint Form */}
+      {showComplaintForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-lg font-bold text-gray-900">Report Issue</h3>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Type
+              </label>
+              <select
+                value={complaintData.type}
+                onChange={(e) =>
+                  setComplaintData({ ...complaintData, type: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Type</option>
+                <option value="customer_issue">Customer Issue</option>
+                <option value="navigation_issue">Navigation Issue</option>
+                <option value="address_issue">Address Issue</option>
+                <option value="vehicle_issue">Vehicle Issue</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Details
+              </label>
+              <textarea
+                value={complaintData.details}
+                onChange={(e) =>
+                  setComplaintData({
+                    ...complaintData,
+                    details: e.target.value,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows="3"
+                placeholder="Describe the issue..."
+              />
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={registerComplaint}
+                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Report
+              </button>
+              <button
+                onClick={() => setShowComplaintForm(false)}
+                className="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

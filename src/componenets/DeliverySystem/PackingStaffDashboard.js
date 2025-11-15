@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Clock,
   CheckCircle,
-  Play,
-  X,
   AlertTriangle,
   Package,
+  X,
+  Play,
+  Eye,
 } from "lucide-react";
 
 const API_BASE_URL = "https://e-commchatbot-backend-4.onrender.com";
@@ -16,40 +17,76 @@ const PackingStaffDashboard = () => {
   const [orderDetails, setOrderDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ pending: 0, packing: 0, completed: 0 });
-  const [showComplaintModal, setShowComplaintModal] = useState(false);
+  const [packingNotes, setPackingNotes] = useState("");
   const [complaintData, setComplaintData] = useState({
     itemIndex: null,
     complaintType: "",
-    complaintDetails: "",
+    details: "",
   });
-  const [packingNotes, setPackingNotes] = useState("");
+  const [showComplaintForm, setShowComplaintForm] = useState(false);
+  const [employeeInfo, setEmployeeInfo] = useState(null);
+  const updateTimeoutRef = useRef(null);
+
+  const EMPLOYEE_ID = localStorage.getItem("packingStaffId") || "PACKING_001";
 
   useEffect(() => {
+    fetchEmployeeInfo();
     fetchPackingQueue();
     fetchStats();
 
-    // Real-time updates every 5 seconds
     const interval = setInterval(() => {
-      fetchPackingQueue();
-      fetchStats();
+      fetchPackingQueueQuiet();
+      fetchStatsQuiet();
       if (selectedOrder) {
-        fetchOrderDetails(selectedOrder);
+        fetchOrderDetailsQuiet(selectedOrder);
       }
     }, 5000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
+    };
   }, [selectedOrder]);
+
+  const fetchEmployeeInfo = async () => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/employees/${EMPLOYEE_ID}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setEmployeeInfo(data);
+      }
+    } catch (error) {
+      console.error("Error fetching employee info:", error);
+    }
+  };
 
   const fetchPackingQueue = async () => {
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE_URL}/api/packing/queue`);
       const data = await response.json();
-      setPackingQueue(data);
+      setPackingQueue(data || []);
     } catch (error) {
       console.error("Error fetching packing queue:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPackingQueueQuiet = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/packing/queue`);
+      const data = await response.json();
+      setPackingQueue((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(data)) {
+          return data || [];
+        }
+        return prev;
+      });
+    } catch (error) {
+      console.error("Error:", error);
     }
   };
 
@@ -60,6 +97,16 @@ const PackingStaffDashboard = () => {
       setStats(data);
     } catch (error) {
       console.error("Error fetching stats:", error);
+    }
+  };
+
+  const fetchStatsQuiet = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/packing/stats`);
+      const data = await response.json();
+      setStats(data);
+    } catch (error) {
+      console.error("Error:", error);
     }
   };
 
@@ -76,6 +123,23 @@ const PackingStaffDashboard = () => {
     }
   };
 
+  const fetchOrderDetailsQuiet = async (orderId) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/packing/order/${orderId}`
+      );
+      const data = await response.json();
+      setOrderDetails((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(data)) {
+          return data;
+        }
+        return prev;
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
   const startPacking = async (orderId) => {
     try {
       const response = await fetch(
@@ -84,26 +148,23 @@ const PackingStaffDashboard = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            employeeId: "PACKING_001",
-            employeeName: "Packing Staff",
+            employeeId: EMPLOYEE_ID,
+            employeeName: employeeInfo?.name || "Packing Staff",
           }),
         }
       );
 
       if (response.ok) {
-        const result = await response.json();
-        alert(`Packing started for order ${orderId}`);
-
-        // Refresh data immediately
+        alert("Packing started!");
         fetchPackingQueue();
         fetchOrderDetails(orderId);
         fetchStats();
       } else {
         const error = await response.json();
-        alert(`Failed to start packing: ${error.error}`);
+        alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error starting packing:", error);
+      console.error("Error:", error);
       alert("Failed to start packing");
     }
   };
@@ -116,73 +177,27 @@ const PackingStaffDashboard = () => {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            employeeId: "PACKING_001",
-            employeeName: "Packing Staff",
+            employeeId: EMPLOYEE_ID,
+            employeeName: employeeInfo?.name || "Packing Staff",
           }),
         }
       );
 
       if (response.ok) {
         const result = await response.json();
-
-        // Show progress notification
         alert(
-          `Item packed! Progress: ${result.packedItems}/${result.totalItems} items`
+          `Item packed! Progress: ${result.packedItems}/${result.totalItems}`
         );
-
-        // Refresh data immediately
         fetchOrderDetails(selectedOrder);
         fetchPackingQueue();
         fetchStats();
       } else {
         const error = await response.json();
-        alert(`Failed to mark item as packed: ${error.error}`);
+        alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error marking item as packed:", error);
-      alert("Failed to mark item as packed");
-    }
-  };
-
-  const addComplaint = async () => {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/packing/complaint/${selectedOrder}/${complaintData.itemIndex}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            complaintType: complaintData.complaintType,
-            complaintDetails: complaintData.complaintDetails,
-            employeeId: "PACKING_001",
-            employeeName: "Packing Staff",
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const result = await response.json();
-
-        setShowComplaintModal(false);
-        setComplaintData({
-          itemIndex: null,
-          complaintType: "",
-          complaintDetails: "",
-        });
-
-        // Show success notification
-        alert(`Complaint added successfully: ${result.complaintId}`);
-
-        // Refresh data immediately
-        fetchOrderDetails(selectedOrder);
-        fetchPackingQueue();
-      } else {
-        const error = await response.json();
-        alert(`Failed to add complaint: ${error.error}`);
-      }
-    } catch (error) {
-      console.error("Error adding complaint:", error);
-      alert("Failed to add complaint");
+      console.error("Error:", error);
+      alert("Failed to mark item");
     }
   };
 
@@ -194,511 +209,336 @@ const PackingStaffDashboard = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            employeeId: EMPLOYEE_ID,
+            employeeName: employeeInfo?.name || "Packing Staff",
             packingNotes: packingNotes,
-            employeeId: "PACKING_001",
-            employeeName: "Packing Staff",
           }),
         }
       );
 
       if (response.ok) {
-        const result = await response.json();
-
-        // Show success notification
-        alert(
-          `Order ${selectedOrder} packing completed! Status: ${result.newStatus}`
-        );
-
-        // Reset state
+        alert("Packing completed!");
         setSelectedOrder(null);
         setOrderDetails(null);
         setPackingNotes("");
-
-        // Refresh data immediately
         fetchPackingQueue();
         fetchStats();
       } else {
         const error = await response.json();
-        alert(`Failed to complete packing: ${error.error}`);
+        alert(`Error: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error completing packing:", error);
+      console.error("Error:", error);
       alert("Failed to complete packing");
     }
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-500 text-white";
-      case "medium":
-        return "bg-gray-800 text-white";
-      case "low":
-        return "bg-gray-500 text-white";
-      default:
-        return "bg-gray-300 text-gray-700";
+  const registerComplaint = async () => {
+    if (!complaintData.complaintType) {
+      alert("Select complaint type");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/packing/complaint/${selectedOrder}/${complaintData.itemIndex}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            complaintType: complaintData.complaintType,
+            details: complaintData.details,
+            reportedBy: employeeInfo?.name || "Packing Staff",
+            reportedAt: new Date(),
+          }),
+        }
+      );
+
+      if (response.ok) {
+        alert("Complaint registered!");
+        setShowComplaintForm(false);
+        setComplaintData({ itemIndex: null, complaintType: "", details: "" });
+        fetchOrderDetails(selectedOrder);
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Failed to register complaint");
     }
   };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "picking-order":
-        return "bg-blue-100 text-blue-800";
-      case "allocated-driver":
-        return "bg-green-100 text-green-800";
-      case "order-confirmed":
-        return "bg-orange-100 text-orange-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  const getItemStatusColor = (packingStatus) => {
-    switch (packingStatus) {
-      case "packed":
-        return "bg-green-100 text-green-800";
-      case "unavailable":
-        return "bg-red-100 text-red-800";
-      case "packing":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-orange-100 text-orange-800";
-    }
-  };
-
-  const ComplaintModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Add Item Complaint</h3>
-          <button onClick={() => setShowComplaintModal(false)}>
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Complaint Type
-            </label>
-            <select
-              value={complaintData.complaintType}
-              onChange={(e) =>
-                setComplaintData({
-                  ...complaintData,
-                  complaintType: e.target.value,
-                })
-              }
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="">Select complaint type</option>
-              <option value="not_available">Item not available</option>
-              <option value="damaged">Item damaged</option>
-              <option value="expired">Item expired</option>
-              <option value="insufficient_stock">Insufficient stock</option>
-              <option value="quality_issue">Quality issue</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Details
-            </label>
-            <textarea
-              value={complaintData.complaintDetails}
-              onChange={(e) =>
-                setComplaintData({
-                  ...complaintData,
-                  complaintDetails: e.target.value,
-                })
-              }
-              className="w-full p-2 border border-gray-300 rounded-md"
-              rows="3"
-              placeholder="Enter complaint details..."
-            />
-          </div>
-
-          <div className="flex space-x-3">
-            <button
-              onClick={() => setShowComplaintModal(false)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={addComplaint}
-              disabled={
-                !complaintData.complaintType || !complaintData.complaintDetails
-              }
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-            >
-              Add Complaint
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">
-            Packing Dashboard
-          </h2>
-          <p className="text-gray-600">Manage order packing and preparation</p>
+    <div className="space-y-6">
+      {/* Employee Info */}
+      {employeeInfo && (
+        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <p className="text-sm">
+            <strong>Packing Staff:</strong> {employeeInfo.name}
+          </p>
         </div>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center text-sm text-gray-600">
-            <Clock className="h-4 w-4 mr-1" />
-            {stats.pending} pending orders
-          </div>
-          <div className="flex items-center space-x-2 text-sm text-green-600">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span>Live Updates</span>
-          </div>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-yellow-600 rounded-lg p-4 text-white">
+          <p className="text-sm opacity-90">Pending</p>
+          <p className="text-3xl font-bold mt-1">{stats.pending}</p>
+        </div>
+        <div className="bg-blue-600 rounded-lg p-4 text-white">
+          <p className="text-sm opacity-90">Packing</p>
+          <p className="text-3xl font-bold mt-1">{stats.packing}</p>
+        </div>
+        <div className="bg-green-600 rounded-lg p-4 text-white">
+          <p className="text-sm opacity-90">Completed</p>
+          <p className="text-3xl font-bold mt-1">{stats.completed}</p>
         </div>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
-        <div className="flex items-center">
-          <Clock className="h-5 w-5 text-blue-600 mr-2" />
-          <span className="text-sm text-blue-800">
-            Orders should be packed 2-3 hours before scheduled delivery time to
-            ensure freshness.
-          </span>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Packing Queue</h3>
-        </div>
-
-        {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading packing queue...</p>
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Queue */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="bg-gray-800 text-white p-4 flex items-center space-x-2 rounded-t-lg">
+            <Package className="h-5 w-5" />
+            <h3 className="font-bold">Packing Queue</h3>
           </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-6 gap-4 px-6 py-3 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-              <div>Order</div>
-              <div>Priority</div>
-              <div>Pack By</div>
-              <div>Delivery Time</div>
-              <div>Status</div>
-              <div>Actions</div>
+
+          {loading ? (
+            <div className="p-8 text-center text-gray-500">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             </div>
-
-            <div className="divide-y divide-gray-200">
-              {packingQueue.map((order, index) => (
+          ) : packingQueue.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              <p>No orders to pack</p>
+            </div>
+          ) : (
+            <div className="divide-y max-h-96 overflow-y-auto">
+              {packingQueue.map((order) => (
                 <div
-                  key={index}
-                  className="grid grid-cols-6 gap-4 px-6 py-4 hover:bg-gray-50"
+                  key={order._id}
+                  onClick={() => fetchOrderDetails(order.orderId)}
+                  className={`p-4 cursor-pointer hover:bg-gray-50 transition ${
+                    selectedOrder === order.orderId
+                      ? "bg-blue-50 border-l-4 border-blue-500"
+                      : ""
+                  }`}
                 >
-                  <div>
-                    <div className="font-medium text-gray-900">
-                      {order.orderId}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {order.customerName}
-                    </div>
-                  </div>
-                  <div>
-                    <span
-                      className={`inline-block px-2 py-1 text-xs font-medium rounded ${getPriorityColor(
-                        order.priority
-                      )}`}
-                    >
-                      {order.priority}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-900">
-                      {formatTime(order.packByTime)}
-                    </div>
-                    {order.isOverdue && (
-                      <div className="text-xs text-red-600">Overdue</div>
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-900">
-                      {new Date(order.deliveryDate).toLocaleString()}
-                    </div>
-                  </div>
-                  <div>
-                    <span
-                      className={`inline-block px-2 py-1 text-xs font-medium rounded ${getStatusColor(
-                        order.status
-                      )}`}
-                    >
-                      {order.status === "order-confirmed"
-                        ? "pending"
-                        : order.status === "picking-order"
-                        ? "packing"
-                        : order.status === "allocated-driver"
-                        ? "packed"
-                        : order.status}
-                    </span>
-                    {order.packedItemsCount > 0 && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        {order.packedItemsCount}/{order.itemsCount} items
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    {order.status === "order-confirmed" ? (
-                      <button
-                        onClick={() => startPacking(order.orderId)}
-                        className="flex items-center px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-700"
-                      >
-                        <Play className="h-3 w-3 mr-1" />
-                        Start Packing
-                      </button>
-                    ) : order.status === "picking-order" ? (
-                      <button
-                        onClick={() => fetchOrderDetails(order.orderId)}
-                        className="flex items-center px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                      >
-                        <Package className="h-3 w-3 mr-1" />
-                        Continue
-                      </button>
-                    ) : (
-                      <button className="flex items-center px-3 py-1 text-xs bg-green-600 text-white rounded">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Packed
-                      </button>
-                    )}
-                  </div>
+                  <p className="font-semibold text-gray-900 text-sm">
+                    {order.orderId}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {order.customerName}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Items: {order.items?.length || 0}
+                  </p>
+                  <span
+                    className={`inline-block mt-2 px-2 py-1 text-xs font-semibold rounded ${
+                      order.status === "completed"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    {order.status}
+                  </span>
                 </div>
               ))}
             </div>
-          </>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* Packing Details Section */}
-      {selectedOrder && orderDetails && (
-        <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">
-              Packing Details - {selectedOrder}
-            </h3>
-            <div className="flex items-center space-x-2 text-sm text-blue-600">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              <span>Real-time updates</span>
-            </div>
-          </div>
+        {/* Details & Actions */}
+        <div className="lg:col-span-2">
+          {selectedOrder && orderDetails ? (
+            <div className="bg-white rounded-lg shadow p-6 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {orderDetails.orderId}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {orderDetails.customerName}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedOrder(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
-          <div className="p-6">
-            <h4 className="font-medium mb-4">Items to Pack:</h4>
+              {/* Customer & Delivery Info */}
+              <div className="border-t pt-4 bg-gray-50 p-3 rounded">
+                <p className="text-sm">
+                  <strong>Phone:</strong> {orderDetails.customerPhone}
+                </p>
+                <p className="text-sm">
+                  <strong>Address:</strong> {orderDetails.deliveryAddress}
+                </p>
+              </div>
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 uppercase">
-                      Status
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 uppercase">
-                      Order ID
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 uppercase">
-                      Item
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 uppercase">
-                      Quantity
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 uppercase">
-                      Action
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 uppercase">
-                      Make Complaint
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {orderDetails.items.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <input
-                          type="radio"
-                          checked={item.packingStatus === "packed"}
-                          readOnly
-                          className="h-4 w-4 text-gray-600"
-                        />
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">
-                        {selectedOrder}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-sm text-gray-900">
+              {/* Items */}
+              <div className="border-t pt-4">
+                <h4 className="font-bold text-gray-900 mb-3">Items to Pack</h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {orderDetails.items?.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-gray-50 p-3 rounded flex justify-between items-start"
+                    >
+                      <div>
+                        <p className="font-semibold text-gray-900">
                           {item.productName}
-                        </div>
-                        {item.itemComplaints &&
-                          item.itemComplaints.length > 0 && (
-                            <div className="flex items-center text-xs text-red-600 mt-1">
-                              <AlertTriangle className="h-3 w-3 mr-1" />
-                              Complaint:{" "}
-                              {
-                                item.itemComplaints[
-                                  item.itemComplaints.length - 1
-                                ].complaintDetails
-                              }
-                            </div>
-                          )}
-                        {item.packingStatus && (
-                          <span
-                            className={`inline-block px-2 py-1 text-xs rounded mt-1 ${getItemStatusColor(
-                              item.packingStatus
-                            )}`}
-                          >
-                            {item.packingStatus}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">
-                        {item.quantity} {item.weight}
-                      </td>
-                      <td className="py-3 px-4">
-                        {item.packingStatus === "packed" ? (
-                          <span className="inline-flex items-center px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Packed
-                          </span>
-                        ) : item.packingStatus === "unavailable" ? (
-                          <span className="inline-flex items-center px-3 py-1 text-xs bg-red-100 text-red-800 rounded-full">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Unavailable
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Qty: {item.quantity}
+                        </p>
+                      </div>
+                      <div className="space-x-2 flex">
+                        {item.packed ? (
+                          <span className="inline-flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                            <CheckCircle className="h-4 w-4" />
+                            <span>Packed</span>
                           </span>
                         ) : (
-                          <button
-                            onClick={() => markItemPacked(index)}
-                            className="flex items-center px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-700"
-                          >
-                            Mark Packed
-                          </button>
+                          <>
+                            <button
+                              onClick={() => markItemPacked(idx)}
+                              className="px-2 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                            >
+                              Pack
+                            </button>
+                            <button
+                              onClick={() => {
+                                setComplaintData({
+                                  itemIndex: idx,
+                                  complaintType: "",
+                                  details: "",
+                                });
+                                setShowComplaintForm(true);
+                              }}
+                              className="px-2 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+                            >
+                              Issue
+                            </button>
+                          </>
                         )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => {
-                            setComplaintData({
-                              itemIndex: index,
-                              complaintType: "",
-                              complaintDetails: "",
-                            });
-                            setShowComplaintModal(true);
-                          }}
-                          className="flex items-center px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
-                        >
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Make Complaint
-                        </button>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              </div>
 
-            {/* Packing Notes */}
-            <div className="mt-6">
-              <h4 className="font-medium mb-2">Packing Notes:</h4>
-              <textarea
-                value={packingNotes}
-                onChange={(e) => setPackingNotes(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md"
-                rows="3"
-                placeholder="Add any special notes about packing (fragile items, special handling, etc.)"
-              />
-            </div>
+              {/* Packing Notes */}
+              <div className="border-t pt-4">
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Packing Notes
+                </label>
+                <textarea
+                  value={packingNotes}
+                  onChange={(e) => setPackingNotes(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="2"
+                  placeholder="Special instructions or notes..."
+                />
+              </div>
 
-            {/* Action Buttons */}
-            <div className="mt-6 flex justify-between">
-              <button
-                onClick={() => {
-                  setSelectedOrder(null);
-                  setOrderDetails(null);
-                  setPackingNotes("");
-                }}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-              >
-                Close
-              </button>
-
-              <div className="flex space-x-3">
+              {/* Actions */}
+              <div className="border-t pt-4 flex space-x-3">
+                <button
+                  onClick={() => startPacking(selectedOrder)}
+                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                >
+                  <Play className="h-4 w-4" />
+                  <span>Start Packing</span>
+                </button>
                 <button
                   onClick={completePacking}
-                  disabled={
-                    !orderDetails.items.every(
-                      (item) =>
-                        item.packingStatus === "packed" ||
-                        item.packingStatus === "unavailable"
-                    )
-                  }
-                  className="flex items-center px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
                 >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Complete Packing
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Complete Packing</span>
                 </button>
               </div>
             </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+              <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>Select an order to begin packing</p>
+            </div>
+          )}
+        </div>
+      </div>
 
-            {/* Enhanced Progress Indicator */}
-            <div className="mt-4 bg-gray-50 p-4 rounded-md">
-              <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Packing Progress</span>
-                <span>
-                  {
-                    orderDetails.items.filter(
-                      (item) => item.packingStatus === "packed"
-                    ).length
-                  }{" "}
-                  / {orderDetails.items.length} items
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  className="bg-green-600 h-3 rounded-full transition-all duration-500 ease-in-out"
-                  style={{
-                    width: `${
-                      (orderDetails.items.filter(
-                        (item) => item.packingStatus === "packed"
-                      ).length /
-                        orderDetails.items.length) *
-                      100
-                    }%`,
-                  }}
-                ></div>
-              </div>
-              <div className="mt-2 text-xs text-gray-500">
-                Complaints:{" "}
-                {orderDetails.items.reduce(
-                  (count, item) =>
-                    count +
-                    (item.itemComplaints ? item.itemComplaints.length : 0),
-                  0
-                )}
-              </div>
+      {/* Complaint Form */}
+      {showComplaintForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-lg font-bold text-gray-900">
+              Register Complaint
+            </h3>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Complaint Type
+              </label>
+              <select
+                value={complaintData.complaintType}
+                onChange={(e) =>
+                  setComplaintData({
+                    ...complaintData,
+                    complaintType: e.target.value,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Type</option>
+                <option value="damaged">Damaged Item</option>
+                <option value="missing">Missing Item</option>
+                <option value="wrong_item">Wrong Item</option>
+                <option value="quantity_mismatch">Quantity Mismatch</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Details
+              </label>
+              <textarea
+                value={complaintData.details}
+                onChange={(e) =>
+                  setComplaintData({
+                    ...complaintData,
+                    details: e.target.value,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows="3"
+                placeholder="Describe the issue..."
+              />
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={registerComplaint}
+                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Register
+              </button>
+              <button
+                onClick={() => setShowComplaintForm(false)}
+                className="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Complaint Modal */}
-      {showComplaintModal && <ComplaintModal />}
     </div>
   );
 };
