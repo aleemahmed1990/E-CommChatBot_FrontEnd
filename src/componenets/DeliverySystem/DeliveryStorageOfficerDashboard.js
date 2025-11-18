@@ -1,551 +1,873 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Building,
+  Clock,
+  CheckCircle2,
   CheckCircle,
-  AlertTriangle,
-  X,
-  Archive,
   Eye,
+  Package,
+  Building,
+  Truck,
+  User,
+  Phone,
+  FileText,
+  Navigation,
+  X,
+  AlertTriangle,
 } from "lucide-react";
 
 const API_BASE_URL = "https://e-commchatbot-backend-4.onrender.com";
 
-const DeliveryStorageOfficerDashboard = () => {
-  const [storageOrders, setStorageOrders] = useState([]);
+// Separate Modal Component - prevents unnecessary re-renders
+const VerificationModalComponent = ({
+  selectedOrder,
+  orderDetails,
+  storageNotes,
+  setStorageNotes,
+  storageLocation,
+  setStorageLocation,
+  onClose,
+  onCompleteVerification,
+  onVerifyItem,
+  onAddComplaint,
+  setComplaintData,
+  setShowComplaintModal,
+}) => {
+  if (!orderDetails || !selectedOrder) return null;
+
+  const allItemsVerified = orderDetails.items.every(
+    (item) =>
+      item.storageVerified === true ||
+      (item.storageComplaints && item.storageComplaints.length > 0)
+  );
+
+  const formatDateTime = (date) => {
+    if (!date) return "N/A";
+    const d = new Date(date);
+    return d.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-6 sticky top-0 bg-white border-b border-gray-200">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Order Verification - {selectedOrder}
+              </h2>
+              <div className="mt-3 space-y-1 text-sm text-gray-600">
+                <p>
+                  <span className="font-medium">Packing Staff:</span>{" "}
+                  {orderDetails.packingDetails?.packingStaff?.staffName ||
+                    "N/A"}
+                </p>
+                <p>
+                  <span className="font-medium">Packed At:</span>{" "}
+                  {formatDateTime(orderDetails.packingDetails?.packedAt)}
+                </p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Items Table */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Items to Check:</h3>
+            <div className="overflow-x-auto border border-gray-200 rounded-lg">
+              <table className="min-w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-12">
+                      Status
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                      Item
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-24">
+                      Qty
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-40">
+                      Action
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-32">
+                      Report
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {orderDetails.items.map((item, index) => (
+                    <tr key={`item-${index}`} className="hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        {item.storageVerified ? (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        ) : item.storageComplaints &&
+                          item.storageComplaints.length > 0 ? (
+                          <AlertTriangle className="h-5 w-5 text-red-500" />
+                        ) : (
+                          <div className="h-5 w-5 border-2 border-gray-300 rounded"></div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {item.productName}
+                        </div>
+                        {item.storageComplaints &&
+                          item.storageComplaints.length > 0 && (
+                            <div className="flex items-center text-xs text-red-600 mt-1">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              {
+                                item.storageComplaints[
+                                  item.storageComplaints.length - 1
+                                ].complaintDetails
+                              }
+                            </div>
+                          )}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-900">
+                        {item.quantity} {item.weight || ""}
+                      </td>
+                      <td className="py-3 px-4">
+                        {item.storageVerified ? (
+                          <span className="inline-flex items-center px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Verified
+                          </span>
+                        ) : item.storageComplaints &&
+                          item.storageComplaints.length > 0 ? (
+                          <span className="inline-flex items-center px-3 py-1 text-xs bg-red-100 text-red-800 rounded-full">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            Has Issue
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => onVerifyItem(index)}
+                            className="px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
+                          >
+                            Verify Now
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <button
+                          onClick={() => {
+                            setComplaintData({
+                              itemIndex: index,
+                              complaintType: "",
+                              complaintDetails: "",
+                            });
+                            setShowComplaintModal(true);
+                          }}
+                          className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                        >
+                          <AlertTriangle className="h-3 w-3 inline mr-1" />
+                          Report
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Storage Notes */}
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Storage Notes
+            </label>
+            <textarea
+              value={storageNotes}
+              onChange={(e) => setStorageNotes(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+              rows="3"
+              placeholder="Add any notes about item conditions, storage requirements, etc."
+            />
+          </div>
+
+          {/* Storage Location */}
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Storage Location
+            </label>
+            <input
+              type="text"
+              value={storageLocation}
+              onChange={(e) => setStorageLocation(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+              placeholder="e.g., Shelf A-12, Cold Storage Room 2, etc."
+            />
+          </div>
+
+          {/* Progress Bar */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <span className="font-medium">Verification Progress</span>
+              <span>
+                {
+                  orderDetails.items.filter((item) => item.storageVerified)
+                    .length
+                }{" "}
+                / {orderDetails.items.length} items
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                className="bg-green-600 h-2.5 rounded-full transition-all duration-300"
+                style={{
+                  width: `${
+                    (orderDetails.items.filter((item) => item.storageVerified)
+                      .length /
+                      orderDetails.items.length) *
+                    100
+                  }%`,
+                }}
+              ></div>
+            </div>
+            <div className="mt-2 text-xs text-gray-500">
+              Complaints:{" "}
+              {orderDetails.items.reduce(
+                (count, item) =>
+                  count +
+                  (item.storageComplaints ? item.storageComplaints.length : 0),
+                0
+              )}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-between pt-4 border-t border-gray-200">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Close
+            </button>
+
+            {allItemsVerified && (
+              <button
+                onClick={onCompleteVerification}
+                className="flex items-center px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Complete & Hand Over
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Complaint Modal Component
+const ComplaintModalComponent = ({
+  complaintData,
+  setComplaintData,
+  onAddComplaint,
+  onClose,
+}) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Add Storage Complaint</h3>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Complaint Type
+            </label>
+            <select
+              value={complaintData.complaintType}
+              onChange={(e) =>
+                setComplaintData({
+                  ...complaintData,
+                  complaintType: e.target.value,
+                })
+              }
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-800"
+            >
+              <option value="">Select complaint type</option>
+              <option value="damaged">Item damaged</option>
+              <option value="missing">Item missing</option>
+              <option value="wrong_item">Wrong item</option>
+              <option value="quantity_mismatch">Quantity mismatch</option>
+              <option value="packaging_issue">Packaging issue</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Details
+            </label>
+            <textarea
+              value={complaintData.complaintDetails}
+              onChange={(e) =>
+                setComplaintData({
+                  ...complaintData,
+                  complaintDetails: e.target.value,
+                })
+              }
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-800"
+              rows="3"
+              placeholder="Enter complaint details..."
+            />
+          </div>
+
+          <div className="flex space-x-3 pt-2">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onAddComplaint}
+              disabled={
+                !complaintData.complaintType || !complaintData.complaintDetails
+              }
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add Complaint
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
+  const [storageQueue, setStorageQueue] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderDetails, setOrderDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    inStorage: 0,
-    readyToPickup: 0,
-    retrieved: 0,
+    pending: 0,
+    verifying: 0,
+    completed: 0,
   });
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [showComplaintModal, setShowComplaintModal] = useState(false);
+  const [complaintData, setComplaintData] = useState({
+    itemIndex: null,
+    complaintType: "",
+    complaintDetails: "",
+  });
+  const [storageNotes, setStorageNotes] = useState("");
   const [storageLocation, setStorageLocation] = useState("");
-  const [employeeInfo, setEmployeeInfo] = useState(null);
-  const [complaintData, setComplaintData] = useState({ type: "", details: "" });
-  const [showComplaintForm, setShowComplaintForm] = useState(false);
-  const updateTimeoutRef = useRef(null);
+  const pollIntervalRef = useRef(null);
+  const lastFetchRef = useRef({});
 
-  const EMPLOYEE_ID = localStorage.getItem("storageOfficerId") || "STORAGE_001";
+  const roleButtons = [
+    { name: "Order Overview", icon: Package },
+    { name: "Packing Staff", icon: Package },
+    { name: "Delivery Storage Officer", icon: Building },
+    { name: "Dispatch Officer 1", icon: User },
+    { name: "Dispatch Officer 2", icon: User },
+    { name: "Driver", icon: Truck },
+    { name: "Driver on Delivery", icon: Navigation },
+  ];
 
+  const secondRowRoles = [
+    { name: "Complaint Manager on Delivery", icon: Phone },
+    { name: "Complaint Manager After Delivery", icon: FileText },
+  ];
+
+  // Initialize polling
   useEffect(() => {
-    fetchEmployeeInfo();
-    fetchStorageOrders();
+    fetchStorageQueue();
     fetchStats();
 
-    const interval = setInterval(() => {
-      fetchStorageOrdersQuiet();
-      fetchStatsQuiet();
-      if (selectedOrder) {
-        fetchOrderDetailsQuiet(selectedOrder);
+    pollIntervalRef.current = setInterval(() => {
+      if (!showVerificationModal) {
+        fetchStorageQueue();
+        fetchStats();
       }
-    }, 5000);
+    }, 30000);
 
     return () => {
-      clearInterval(interval);
-      if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
-  }, [selectedOrder]);
+  }, [showVerificationModal]);
 
-  const fetchEmployeeInfo = async () => {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/employees/${EMPLOYEE_ID}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setEmployeeInfo(data);
-      }
-    } catch (error) {
-      console.error("Error:", error);
+  // Fetch order details when modal opens
+  useEffect(() => {
+    if (selectedOrder && showVerificationModal) {
+      fetchOrderDetails(selectedOrder);
     }
-  };
+  }, [selectedOrder, showVerificationModal]);
 
-  const fetchStorageOrders = async () => {
+  const fetchStorageQueue = useCallback(async () => {
     try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/storage/orders`);
+      const response = await fetch(`${API_BASE_URL}/api/storage/queue`);
       const data = await response.json();
-      setStorageOrders(data || []);
+
+      const newHash = JSON.stringify(data);
+      if (lastFetchRef.current.queue !== newHash) {
+        setStorageQueue(data);
+        lastFetchRef.current.queue = newHash;
+      }
+      setLoading(false);
     } catch (error) {
-      console.error("Error:", error);
-    } finally {
+      console.error("Error fetching storage queue:", error);
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchStorageOrdersQuiet = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/storage/orders`);
-      const data = await response.json();
-      setStorageOrders((prev) => {
-        if (JSON.stringify(prev) !== JSON.stringify(data)) {
-          return data || [];
-        }
-        return prev;
-      });
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/storage/stats`);
       const data = await response.json();
-      setStats(data);
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
 
-  const fetchStatsQuiet = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/storage/stats`);
-      const data = await response.json();
-      setStats(data);
+      const newHash = JSON.stringify(data);
+      if (lastFetchRef.current.stats !== newHash) {
+        setStats(data);
+        lastFetchRef.current.stats = newHash;
+      }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error fetching stats:", error);
     }
-  };
+  }, []);
 
-  const fetchOrderDetails = async (orderId) => {
+  const fetchOrderDetails = useCallback(async (orderId) => {
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/storage/order/${orderId}`
       );
       const data = await response.json();
-      setOrderDetails(data);
-      setSelectedOrder(orderId);
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
 
-  const fetchOrderDetailsQuiet = async (orderId) => {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/storage/order/${orderId}`
-      );
-      const data = await response.json();
-      setOrderDetails((prev) => {
-        if (JSON.stringify(prev) !== JSON.stringify(data)) {
-          return data;
-        }
-        return prev;
-      });
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-
-  const storeOrder = async () => {
-    if (!storageLocation.trim()) {
-      alert("Enter storage location");
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/storage/store/${selectedOrder}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            employeeId: EMPLOYEE_ID,
-            employeeName: employeeInfo?.name || "Storage Officer",
-            storageLocation: storageLocation,
-            verificationDetails: {
-              allItemsVerified: true,
-              packedCorrectly: true,
-              storageOfficer: employeeInfo?.name,
-              timestamp: new Date(),
-            },
-          }),
-        }
-      );
-
-      if (response.ok) {
-        alert(`Order stored at ${storageLocation}`);
-        setStorageLocation("");
-        fetchStorageOrders();
-        fetchOrderDetails(selectedOrder);
-        fetchStats();
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.error}`);
+      const newHash = JSON.stringify(data);
+      if (lastFetchRef.current.details !== newHash) {
+        setOrderDetails(data);
+        lastFetchRef.current.details = newHash;
       }
     } catch (error) {
-      console.error("Error:", error);
-      alert("Failed to store order");
+      console.error("Error fetching order details:", error);
     }
-  };
+  }, []);
 
-  const markReadyToPickup = async () => {
+  const startVerification = useCallback(
+    async (orderId) => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/storage/start/${orderId}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              employeeId: "STORAGE_001",
+              employeeName: "Storage Officer",
+            }),
+          }
+        );
+
+        if (response.ok) {
+          setSelectedOrder(orderId);
+          setShowVerificationModal(true);
+          setStorageNotes("");
+          setStorageLocation("");
+          await fetchOrderDetails(orderId);
+        } else {
+          const error = await response.json();
+          alert(`Failed to start verification: ${error.error}`);
+        }
+      } catch (error) {
+        console.error("Error starting verification:", error);
+        alert("Failed to start verification");
+      }
+    },
+    [fetchOrderDetails]
+  );
+
+  const verifyItem = useCallback(
+    async (itemIndex) => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/storage/item/${selectedOrder}/${itemIndex}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              employeeId: "STORAGE_001",
+              employeeName: "Storage Officer",
+              verified: true,
+              condition: "good",
+            }),
+          }
+        );
+
+        if (response.ok) {
+          const result = await response.json();
+          alert(
+            `Item verified! Progress: ${result.verifiedItems}/${result.totalItems} items`
+          );
+          lastFetchRef.current.details = null;
+          await fetchOrderDetails(selectedOrder);
+        } else {
+          const error = await response.json();
+          alert(`Failed to verify item: ${error.error}`);
+        }
+      } catch (error) {
+        console.error("Error verifying item:", error);
+        alert("Failed to verify item");
+      }
+    },
+    [selectedOrder, fetchOrderDetails]
+  );
+
+  const addComplaint = useCallback(async () => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/storage/ready/${selectedOrder}`,
+        `${API_BASE_URL}/api/storage/complaint/${selectedOrder}/${complaintData.itemIndex}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            employeeId: EMPLOYEE_ID,
-            employeeName: employeeInfo?.name || "Storage Officer",
-            verificationDetails: {
-              qualityChecked: true,
-              quantityVerified: true,
-              readyForPickup: true,
-              verifiedBy: employeeInfo?.name,
-              timestamp: new Date(),
-            },
+            complaintType: complaintData.complaintType,
+            complaintDetails: complaintData.complaintDetails,
+            employeeId: "STORAGE_001",
+            employeeName: "Storage Officer",
           }),
         }
       );
 
       if (response.ok) {
-        alert("Order marked as ready for pickup!");
-        fetchStorageOrders();
-        fetchOrderDetails(selectedOrder);
-        fetchStats();
+        const result = await response.json();
+        setShowComplaintModal(false);
+        setComplaintData({
+          itemIndex: null,
+          complaintType: "",
+          complaintDetails: "",
+        });
+        alert(`Storage complaint added: ${result.complaintId}`);
+        lastFetchRef.current.details = null;
+        await fetchOrderDetails(selectedOrder);
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error}`);
+        alert(`Failed to add complaint: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error:", error);
-      alert("Failed to mark as ready");
+      console.error("Error adding complaint:", error);
+      alert("Failed to add complaint");
     }
-  };
+  }, [selectedOrder, complaintData, fetchOrderDetails]);
 
-  const retrieveOrder = async () => {
+  const completeVerification = useCallback(async () => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/storage/retrieve/${selectedOrder}`,
+        `${API_BASE_URL}/api/storage/complete/${selectedOrder}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            employeeId: EMPLOYEE_ID,
-            employeeName: employeeInfo?.name || "Storage Officer",
+            storageNotes,
+            storageLocation,
+            employeeId: "STORAGE_001",
+            employeeName: "Storage Officer",
           }),
         }
       );
 
       if (response.ok) {
-        alert("Order retrieved for dispatch!");
+        alert("All items verified and handed over to Dispatch Officer 1");
         setSelectedOrder(null);
         setOrderDetails(null);
-        fetchStorageOrders();
-        fetchStats();
+        setShowVerificationModal(false);
+        setStorageNotes("");
+        setStorageLocation("");
+        lastFetchRef.current = {};
+        await fetchStorageQueue();
+        await fetchStats();
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error}`);
+        alert(`Failed to complete verification: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error:", error);
-      alert("Failed to retrieve order");
+      console.error("Error completing verification:", error);
+      alert("Failed to complete verification");
+    }
+  }, [
+    selectedOrder,
+    storageNotes,
+    storageLocation,
+    fetchStorageQueue,
+    fetchStats,
+  ]);
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case "high":
+        return "bg-red-500 text-white";
+      case "medium":
+        return "bg-gray-800 text-white";
+      case "low":
+        return "bg-gray-500 text-white";
+      default:
+        return "bg-gray-300 text-gray-700";
     }
   };
 
-  const registerComplaint = async () => {
-    if (!complaintData.type) {
-      alert("Select complaint type");
-      return;
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "verified":
+        return "bg-gray-800 text-white";
+      case "pending":
+        return "bg-orange-100 text-orange-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
+  };
 
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/storage/complaint/${selectedOrder}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            complaintType: complaintData.type,
-            details: complaintData.details,
-            reportedBy: employeeInfo?.name || "Storage Officer",
-            timestamp: new Date(),
-          }),
-        }
-      );
-
-      if (response.ok) {
-        alert("Complaint registered!");
-        setShowComplaintForm(false);
-        setComplaintData({ type: "", details: "" });
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.error}`);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Failed to register complaint");
-    }
+  const formatTime = (date) => {
+    if (!date) return "N/A";
+    return new Date(date).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   return (
-    <div className="space-y-6">
-      {/* Employee Info */}
-      {employeeInfo && (
-        <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-          <p className="text-sm">
-            <strong>Storage Officer:</strong> {employeeInfo.name}
+    <div className="min-h-screen bg-gray-50">
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+            Delivery Management System
+          </h1>
+          <p className="text-gray-600">
+            Complete workflow management from packing to delivery confirmation
           </p>
         </div>
-      )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-blue-600 rounded-lg p-4 text-white">
-          <p className="text-sm opacity-90">In Storage</p>
-          <p className="text-3xl font-bold mt-1">{stats.inStorage}</p>
-        </div>
-        <div className="bg-yellow-600 rounded-lg p-4 text-white">
-          <p className="text-sm opacity-90">Ready to Pickup</p>
-          <p className="text-3xl font-bold mt-1">{stats.readyToPickup}</p>
-        </div>
-        <div className="bg-green-600 rounded-lg p-4 text-white">
-          <p className="text-sm opacity-90">Retrieved</p>
-          <p className="text-3xl font-bold mt-1">{stats.retrieved}</p>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Queue */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="bg-gray-800 text-white p-4 flex items-center space-x-2 rounded-t-lg">
-            <Building className="h-5 w-5" />
-            <h3 className="font-bold">Storage Queue</h3>
-          </div>
-
-          {loading ? (
-            <div className="p-8 text-center text-gray-500">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            </div>
-          ) : storageOrders.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <p>No orders in storage</p>
-            </div>
-          ) : (
-            <div className="divide-y max-h-96 overflow-y-auto">
-              {storageOrders.map((order) => (
-                <div
-                  key={order._id}
-                  onClick={() => fetchOrderDetails(order.orderId)}
-                  className={`p-4 cursor-pointer hover:bg-gray-50 transition ${
-                    selectedOrder === order.orderId
-                      ? "bg-blue-50 border-l-4 border-blue-500"
-                      : ""
-                  }`}
-                >
-                  <p className="font-semibold text-gray-900 text-sm">
-                    {order.orderId}
-                  </p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    {order.customerName}
-                  </p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Items: {order.items?.length || 0}
-                  </p>
-                  <span
-                    className={`inline-block mt-2 px-2 py-1 text-xs font-semibold rounded ${
-                      order.status === "ready-to-pickup"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {order.status?.replace(/-/g, " ")}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Details */}
-        <div className="lg:col-span-2">
-          {selectedOrder && orderDetails ? (
-            <div className="bg-white rounded-lg shadow p-6 space-y-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    {orderDetails.orderId}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {orderDetails.customerName}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedOrder(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              {/* Status */}
-              <div className="bg-blue-50 p-3 rounded">
-                <p className="text-sm text-gray-600">Current Status</p>
-                <p className="text-lg font-bold text-blue-600">
-                  {orderDetails.status?.replace(/-/g, " ").toUpperCase()}
-                </p>
-              </div>
-
-              {/* Customer Info */}
-              <div className="border-t pt-4 bg-gray-50 p-3 rounded">
-                <p className="text-sm">
-                  <strong>Name:</strong> {orderDetails.customerName}
-                </p>
-                <p className="text-sm">
-                  <strong>Phone:</strong> {orderDetails.customerPhone}
-                </p>
-                <p className="text-sm">
-                  <strong>Address:</strong> {orderDetails.deliveryAddress}
-                </p>
-              </div>
-
-              {/* Items */}
-              <div className="border-t pt-4">
-                <h4 className="font-bold text-gray-900 mb-3">Items</h4>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {orderDetails.items?.map((item, idx) => (
-                    <div key={idx} className="bg-gray-50 p-3 rounded">
-                      <p className="font-semibold text-gray-900 text-sm">
-                        {item.productName}
-                      </p>
-                      <p className="text-xs text-gray-600">
-                        Qty: {item.quantity}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Storage Location */}
-              {orderDetails.status !== "ready-to-pickup" && (
-                <div className="border-t pt-4">
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Storage Location
-                  </label>
-                  <input
-                    type="text"
-                    value={storageLocation}
-                    onChange={(e) => setStorageLocation(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., Rack A-12, Shelf B-5"
-                  />
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="border-t pt-4 flex flex-col space-y-2">
-                {orderDetails.status !== "ready-to-pickup" ? (
-                  <>
-                    <button
-                      onClick={storeOrder}
-                      className="flex items-center justify-center space-x-2 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                    >
-                      <Archive className="h-4 w-4" />
-                      <span>Store Order</span>
-                    </button>
-                    <button
-                      onClick={markReadyToPickup}
-                      className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                      <span>Mark Ready for Pickup</span>
-                    </button>
-                  </>
-                ) : (
+        <div className="mb-8">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">
+            Select Role
+          </h2>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-3">
+              {roleButtons.map((role, index) => {
+                const IconComponent = role.icon;
+                return (
                   <button
-                    onClick={retrieveOrder}
-                    className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    key={index}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      role.name === selectedRole
+                        ? "bg-gray-800 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                    onClick={() => setSelectedRole(role.name)}
                   >
-                    <Eye className="h-4 w-4" />
-                    <span>Retrieve for Dispatch</span>
+                    <IconComponent className="h-4 w-4" />
+                    <span>{role.name}</span>
                   </button>
-                )}
-                <button
-                  onClick={() => setShowComplaintForm(true)}
-                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                >
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>Register Complaint</span>
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-              <Building className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p>Select an order from storage queue</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Complaint Form */}
-      {showComplaintForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-bold text-gray-900">
-              Register Complaint
-            </h3>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Type
-              </label>
-              <select
-                value={complaintData.type}
-                onChange={(e) =>
-                  setComplaintData({ ...complaintData, type: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Type</option>
-                <option value="damaged">Damaged Packaging</option>
-                <option value="storage_issue">Storage Issue</option>
-                <option value="item_missing">Item Missing</option>
-                <option value="quantity_error">Quantity Error</option>
-                <option value="other">Other</option>
-              </select>
+                );
+              })}
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Details
-              </label>
-              <textarea
-                value={complaintData.details}
-                onChange={(e) =>
-                  setComplaintData({
-                    ...complaintData,
-                    details: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows="3"
-                placeholder="Describe the issue..."
-              />
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={registerComplaint}
-                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Register
-              </button>
-              <button
-                onClick={() => setShowComplaintForm(false)}
-                className="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
+            <div className="flex flex-wrap gap-3">
+              {secondRowRoles.map((role, index) => {
+                const IconComponent = role.icon;
+                return (
+                  <button
+                    key={index}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      role.name === selectedRole
+                        ? "bg-gray-800 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                    onClick={() => setSelectedRole(role.name)}
+                  >
+                    <IconComponent className="h-4 w-4" />
+                    <span>{role.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
-      )}
+
+        <div>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Delivery Storage Officer Dashboard
+              </h2>
+              <p className="text-gray-600">
+                Verify packed orders and prepare for dispatch
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center text-sm text-gray-600">
+                <Clock className="h-4 w-4 mr-1" />
+                {stats.pending} pending orders
+              </div>
+              <div className="flex items-center space-x-2 text-sm text-green-600">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span>Live Updates</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+            <div className="flex items-center">
+              <CheckCircle2 className="h-5 w-5 text-blue-600 mr-2" />
+              <span className="text-sm text-blue-800">
+                Verify all items match the packing list and check for any
+                damages before sending to dispatch.
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">
+                Storage Operations
+              </h3>
+            </div>
+
+            {loading ? (
+              <div className="p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Loading storage queue...</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-7 gap-4 px-6 py-3 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                  <div>Order</div>
+                  <div>Priority</div>
+                  <div>Packed By</div>
+                  <div>Received At</div>
+                  <div>Delivery Time</div>
+                  <div>Status</div>
+                  <div>Actions</div>
+                </div>
+
+                <div className="divide-y divide-gray-200">
+                  {storageQueue.length > 0 ? (
+                    storageQueue.map((order, index) => (
+                      <div
+                        key={`order-${index}`}
+                        className="grid grid-cols-7 gap-4 px-6 py-4 hover:bg-gray-50"
+                      >
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {order.orderId}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {order.customerName}
+                          </div>
+                        </div>
+                        <div>
+                          <span
+                            className={`inline-block px-2 py-1 text-xs font-medium rounded ${getPriorityColor(
+                              order.priority
+                            )}`}
+                          >
+                            {order.priority}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-900">
+                          {order.packedBy}
+                        </div>
+                        <div className="text-sm text-gray-900">
+                          {formatTime(order.packedAt)}
+                        </div>
+                        <div className="text-sm text-gray-900">
+                          {new Date(order.deliveryDate).toLocaleString()}
+                        </div>
+                        <div>
+                          <span
+                            className={`inline-block px-2 py-1 text-xs font-medium rounded ${getStatusColor(
+                              order.status
+                            )}`}
+                          >
+                            {order.status}
+                          </span>
+                          {order.verifiedItems > 0 && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {order.verifiedItems}/{order.totalItems} items
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          {order.status === "verified" ? (
+                            <button className="flex items-center px-3 py-1 text-xs bg-gray-800 text-white rounded">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Verified
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => startVerification(order.orderId)}
+                              className="flex items-center px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-700"
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              Start
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center text-gray-500">
+                      No orders to verify
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {showVerificationModal && (
+          <VerificationModalComponent
+            selectedOrder={selectedOrder}
+            orderDetails={orderDetails}
+            storageNotes={storageNotes}
+            setStorageNotes={setStorageNotes}
+            storageLocation={storageLocation}
+            setStorageLocation={setStorageLocation}
+            onClose={() => {
+              setShowVerificationModal(false);
+              setSelectedOrder(null);
+              setOrderDetails(null);
+              setStorageNotes("");
+              setStorageLocation("");
+            }}
+            onCompleteVerification={completeVerification}
+            onVerifyItem={verifyItem}
+            onAddComplaint={addComplaint}
+            setComplaintData={setComplaintData}
+            setShowComplaintModal={setShowComplaintModal}
+          />
+        )}
+
+        {showComplaintModal && (
+          <ComplaintModalComponent
+            complaintData={complaintData}
+            setComplaintData={setComplaintData}
+            onAddComplaint={addComplaint}
+            onClose={() => {
+              setShowComplaintModal(false);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 };

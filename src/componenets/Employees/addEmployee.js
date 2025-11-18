@@ -4,7 +4,7 @@ import { ChevronDown, Upload, PlusCircle, X, AlertCircle } from "lucide-react";
 import Sidebar from "../Sidebar/sidebar";
 
 // Base URL for API requests
-const API_BASE_URL = "https://e-commchatbot-backend-4.onrender.com";
+const API_BASE_URL = "https://e-commchatbot-backend-4.onrender.com/api";
 
 const AddEmployee = ({ employeeId }) => {
   const [formData, setFormData] = useState({
@@ -78,13 +78,15 @@ const AddEmployee = ({ employeeId }) => {
   const otherDoc1Ref = useRef(null);
   const otherDoc2Ref = useRef(null);
 
-  // Available roles
+  // Available roles - MUST match Employee schema enum values
   const availableRoles = [
-    { id: "add-products", name: "Add products" },
-    { id: "product-list", name: "Product List" },
-    { id: "finance", name: "Finance" },
-    { id: "orders", name: "Orders" },
-    { id: "customer-service", name: "Customer Service" },
+    { id: "packing-staff", name: "Packing Staff" },
+    { id: "storage-officer", name: "Storage Officer" },
+    { id: "dispatch-officer-1", name: "Dispatch Officer 1" },
+    { id: "dispatch-officer-2", name: "Dispatch Officer 2" },
+    { id: "driver", name: "Driver" },
+    { id: "driver-on-delivery", name: "Driver on Delivery" },
+    { id: "complaint-manager", name: "Complaint Manager" },
   ];
 
   // Relation options
@@ -108,20 +110,23 @@ const AddEmployee = ({ employeeId }) => {
 
   const fetchEmployeeData = async (id) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/employees/${id}`);
-      const employeeData = response.data;
+      const response = await axios.get(`${API_BASE_URL}/employees/${id}`);
+      const employeeData = response.data.employee;
 
       // Set form data
       setFormData({
         name: employeeData.name || "",
         email: employeeData.email || "",
-        phone: employeeData.phone || "",
+        phone: Array.isArray(employeeData.phone)
+          ? employeeData.phone[0]
+          : employeeData.phone || "",
         address: employeeData.address || "",
         emergencyContact: employeeData.emergencyContact || "",
         homeLocation: employeeData.homeLocation || "",
         addedOn: employeeData.addedOn
           ? employeeData.addedOn.slice(0, 10)
           : new Date().toISOString().slice(0, 10),
+        employeeCategory: employeeData.employeeCategory || "",
         roles: employeeData.roles || [],
       });
 
@@ -140,7 +145,6 @@ const AddEmployee = ({ employeeId }) => {
       // Helper function to set preview URL if image exists
       const setPreviewIfExists = (fieldName, imageUrl) => {
         if (imageUrl) {
-          // Ensure the URL is absolute
           const fullUrl = imageUrl.startsWith("http")
             ? imageUrl
             : `${API_BASE_URL}${
@@ -272,11 +276,11 @@ const AddEmployee = ({ employeeId }) => {
 
     // Validate contacts before proceeding
     if (!validateContacts()) {
-      return; // Stop submission if validation fails
+      return;
     }
+
     // Validate identification documents
     if (!validateIdentification()) {
-      // Scroll to the validation error
       window.scrollTo({
         top: document.querySelector(".id-docs-section").offsetTop - 100,
         behavior: "smooth",
@@ -284,22 +288,38 @@ const AddEmployee = ({ employeeId }) => {
       return;
     }
 
+    // Validate required fields
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.address ||
+      !formData.emergencyContact ||
+      !formData.homeLocation ||
+      !formData.employeeCategory
+    ) {
+      setErrorMessage("Please fill in all required fields");
+      return;
+    }
+
     // Create form data to send files
     const submitData = new FormData();
 
     // Append all form fields
-    Object.keys(formData).forEach((key) => {
-      if (key === "roles") {
-        submitData.append(key, JSON.stringify(formData[key]));
-      } else {
-        submitData.append(key, formData[key]);
-      }
-    });
-
-    // Append contacts as JSON
+    submitData.append("name", formData.name);
+    submitData.append("email", formData.email);
+    submitData.append("phone", formData.phone);
+    submitData.append("address", formData.address);
+    submitData.append("emergencyContact", formData.emergencyContact);
+    submitData.append("homeLocation", formData.homeLocation);
+    submitData.append("addedOn", formData.addedOn);
+    submitData.append("employeeCategory", formData.employeeCategory);
+    submitData.append("roles", JSON.stringify(formData.roles));
     submitData.append("contacts", JSON.stringify(contacts));
+    submitData.append("isActivated", isActivated);
+    submitData.append("isBlocked", isBlocked);
 
-    // Append files if they exist (only append new files, not existing ones)
+    // Append files if they exist
     if (profilePicture) submitData.append("profilePicture", profilePicture);
     if (idCardFront) submitData.append("idCardFront", idCardFront);
     if (idCardBack) submitData.append("idCardBack", idCardBack);
@@ -308,61 +328,37 @@ const AddEmployee = ({ employeeId }) => {
     if (otherDoc1) submitData.append("otherDoc1", otherDoc1);
     if (otherDoc2) submitData.append("otherDoc2", otherDoc2);
 
-    // For existing images that haven't been changed, pass the URLs
-    if (!profilePicture && previewUrls.profilePicture)
-      submitData.append("existingProfilePicture", previewUrls.profilePicture);
-    if (!idCardFront && previewUrls.idCardFront)
-      submitData.append("existingIdCardFront", previewUrls.idCardFront);
-    if (!idCardBack && previewUrls.idCardBack)
-      submitData.append("existingIdCardBack", previewUrls.idCardBack);
-    if (!passportFront && previewUrls.passportFront)
-      submitData.append("existingPassportFront", previewUrls.passportFront);
-    if (!passportBack && previewUrls.passportBack)
-      submitData.append("existingPassportBack", previewUrls.passportBack);
-    if (!otherDoc1 && previewUrls.otherDoc1)
-      submitData.append("existingOtherDoc1", previewUrls.otherDoc1);
-    if (!otherDoc2 && previewUrls.otherDoc2)
-      submitData.append("existingOtherDoc2", previewUrls.otherDoc2);
-
-    submitData.append("isActivated", isActivated);
-    submitData.append("isBlocked", isBlocked);
-
     try {
       let response;
+      const url = isEditMode
+        ? `${API_BASE_URL}/employees/${employeeId}`
+        : `${API_BASE_URL}/employees`;
+
       if (isEditMode) {
-        // Update existing employee
-        response = await axios.put(
-          `${API_BASE_URL}/api/employees/${employeeId}`,
-          submitData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        response = await axios.put(url, submitData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
       } else {
-        // Create new employee
-        response = await axios.post(
-          `${API_BASE_URL}/api/employees`,
-          submitData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        response = await axios.post(url, submitData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
       }
 
       if (response.status === 200 || response.status === 201) {
-        // Show success modal
         setSuccessModal({
           isOpen: true,
-          message: "Employee has been added successfully!",
+          message: `Employee has been ${
+            isEditMode ? "updated" : "added"
+          } successfully!`,
         });
-        // Show success message briefly and then refresh the page
+
         setTimeout(() => {
-          window.location.reload(); // This will refresh the page
-        }, 1500); // 1.5 seconds delay to show the success message
+          window.location.reload();
+        }, 1500);
       }
     } catch (error) {
       console.error("Error saving employee:", error);
@@ -412,6 +408,7 @@ const AddEmployee = ({ employeeId }) => {
       </div>
     );
   };
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Success Modal */}
@@ -505,7 +502,7 @@ const AddEmployee = ({ employeeId }) => {
 
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employee email
+                    Employee email <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
@@ -519,7 +516,7 @@ const AddEmployee = ({ employeeId }) => {
 
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employee Address
+                    Employee Address <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -533,7 +530,7 @@ const AddEmployee = ({ employeeId }) => {
 
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Location of home
+                    Location of home <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -549,7 +546,7 @@ const AddEmployee = ({ employeeId }) => {
               <div className="col-span-1">
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employee Name
+                    Employee Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -563,7 +560,7 @@ const AddEmployee = ({ employeeId }) => {
 
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employee Phone
+                    Employee Phone <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
@@ -577,7 +574,8 @@ const AddEmployee = ({ employeeId }) => {
 
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contact in case of emergency
+                    Contact in case of emergency{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -596,7 +594,7 @@ const AddEmployee = ({ employeeId }) => {
                     Profile Picture
                   </label>
                   <div
-                    className="border border-gray-300 rounded h-48 flex items-center justify-center overflow-hidden relative"
+                    className="border border-gray-300 rounded h-48 flex items-center justify-center overflow-hidden relative cursor-pointer"
                     onClick={() => triggerFileInput(profilePictureRef)}
                   >
                     {previewUrls.profilePicture ? (
@@ -606,7 +604,7 @@ const AddEmployee = ({ employeeId }) => {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="text-center p-4 cursor-pointer">
+                      <div className="text-center p-4">
                         <Upload size={32} className="mx-auto text-gray-400" />
                         <p className="text-sm text-gray-500 mt-2">
                           Click to upload image
@@ -649,7 +647,7 @@ const AddEmployee = ({ employeeId }) => {
                 >
                   <div className="w-full md:w-1/3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Name
+                      Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -664,7 +662,7 @@ const AddEmployee = ({ employeeId }) => {
 
                   <div className="w-full md:w-1/3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Relation
+                      Relation <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <select
@@ -690,7 +688,7 @@ const AddEmployee = ({ employeeId }) => {
 
                   <div className="w-full md:w-1/3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number
+                      Phone Number <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
@@ -744,7 +742,7 @@ const AddEmployee = ({ employeeId }) => {
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Employee Category
+                Employee Category <span className="text-red-500">*</span>
               </label>
               <select
                 name="employeeCategory"
@@ -756,6 +754,9 @@ const AddEmployee = ({ employeeId }) => {
                 <option value="">Select Category</option>
                 <option value="Driver">Driver</option>
                 <option value="Order Manager">Order Manager</option>
+                <option value="Packing">Packing</option>
+                <option value="Storage">Storage</option>
+                <option value="Dispatch">Dispatch</option>
               </select>
             </div>
 
@@ -769,7 +770,6 @@ const AddEmployee = ({ employeeId }) => {
                 value={formData.addedOn}
                 onChange={handleInputChange}
                 className="w-full p-2 border border-gray-300 rounded"
-                required
               />
             </div>
 
@@ -810,7 +810,7 @@ const AddEmployee = ({ employeeId }) => {
                           !previewUrls.passportFront
                             ? "border-red-300 bg-red-50"
                             : "border-gray-300"
-                        } rounded h-32 flex items-center justify-center overflow-hidden relative`}
+                        } rounded h-32 flex items-center justify-center overflow-hidden relative cursor-pointer`}
                         onClick={() => triggerFileInput(idCardFrontRef)}
                       >
                         {previewUrls.idCardFront ? (
@@ -820,7 +820,7 @@ const AddEmployee = ({ employeeId }) => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="text-center p-4 cursor-pointer">
+                          <div className="text-center p-4">
                             <Upload
                               size={24}
                               className="mx-auto text-gray-400"
@@ -845,7 +845,7 @@ const AddEmployee = ({ employeeId }) => {
                         ID card back
                       </label>
                       <div
-                        className="border border-gray-300 rounded h-32 flex items-center justify-center overflow-hidden relative"
+                        className="border border-gray-300 rounded h-32 flex items-center justify-center overflow-hidden relative cursor-pointer"
                         onClick={() => triggerFileInput(idCardBackRef)}
                       >
                         {previewUrls.idCardBack ? (
@@ -855,7 +855,7 @@ const AddEmployee = ({ employeeId }) => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="text-center p-4 cursor-pointer">
+                          <div className="text-center p-4">
                             <Upload
                               size={24}
                               className="mx-auto text-gray-400"
@@ -892,7 +892,7 @@ const AddEmployee = ({ employeeId }) => {
                           validationError && !idCardFront && !passportFront
                             ? "border-red-300 bg-red-50"
                             : "border-gray-300"
-                        } rounded h-32 flex items-center justify-center overflow-hidden relative`}
+                        } rounded h-32 flex items-center justify-center overflow-hidden relative cursor-pointer`}
                         onClick={() => triggerFileInput(passportFrontRef)}
                       >
                         {previewUrls.passportFront ? (
@@ -902,7 +902,7 @@ const AddEmployee = ({ employeeId }) => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="text-center p-4 cursor-pointer">
+                          <div className="text-center p-4">
                             <Upload
                               size={24}
                               className="mx-auto text-gray-400"
@@ -931,7 +931,7 @@ const AddEmployee = ({ employeeId }) => {
                         Passport back
                       </label>
                       <div
-                        className="border border-gray-300 rounded h-32 flex items-center justify-center overflow-hidden relative"
+                        className="border border-gray-300 rounded h-32 flex items-center justify-center overflow-hidden relative cursor-pointer"
                         onClick={() => triggerFileInput(passportBackRef)}
                       >
                         {previewUrls.passportBack ? (
@@ -941,7 +941,7 @@ const AddEmployee = ({ employeeId }) => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="text-center p-4 cursor-pointer">
+                          <div className="text-center p-4">
                             <Upload
                               size={24}
                               className="mx-auto text-gray-400"
@@ -975,7 +975,7 @@ const AddEmployee = ({ employeeId }) => {
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div
-                    className="border border-gray-300 rounded h-32 flex items-center justify-center overflow-hidden relative"
+                    className="border border-gray-300 rounded h-32 flex items-center justify-center overflow-hidden relative cursor-pointer"
                     onClick={() => triggerFileInput(otherDoc1Ref)}
                   >
                     {previewUrls.otherDoc1 ? (
@@ -985,7 +985,7 @@ const AddEmployee = ({ employeeId }) => {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="text-center p-4 cursor-pointer">
+                      <div className="text-center p-4">
                         <Upload size={24} className="mx-auto text-gray-400" />
                         <p className="text-xs text-gray-500 mt-1">Upload</p>
                       </div>
@@ -1002,7 +1002,7 @@ const AddEmployee = ({ employeeId }) => {
                   </div>
 
                   <div
-                    className="border border-gray-300 rounded h-32 flex items-center justify-center overflow-hidden relative"
+                    className="border border-gray-300 rounded h-32 flex items-center justify-center overflow-hidden relative cursor-pointer"
                     onClick={() => triggerFileInput(otherDoc2Ref)}
                   >
                     {previewUrls.otherDoc2 ? (
@@ -1012,7 +1012,7 @@ const AddEmployee = ({ employeeId }) => {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="text-center p-4 cursor-pointer">
+                      <div className="text-center p-4">
                         <Upload size={24} className="mx-auto text-gray-400" />
                         <p className="text-xs text-gray-500 mt-1">Upload</p>
                       </div>
