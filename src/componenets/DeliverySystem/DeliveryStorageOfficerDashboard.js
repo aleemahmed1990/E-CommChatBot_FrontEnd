@@ -40,6 +40,10 @@ const VerificationModalComponent = ({
       (item.storageComplaints && item.storageComplaints.length > 0)
   );
 
+  // ✅ Check if order is already completed (read-only mode)
+  const isCompleted = orderDetails.storageDetails?.verificationCompletedAt;
+  const isReadOnly = isCompleted;
+
   const formatDateTime = (date) => {
     if (!date) return "N/A";
     const d = new Date(date);
@@ -61,6 +65,12 @@ const VerificationModalComponent = ({
               <h2 className="text-xl font-semibold text-gray-900">
                 Order Verification - {selectedOrder}
               </h2>
+              {isCompleted && (
+                <div className="mt-2 inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Completed & Handed Over
+                </div>
+              )}
               <div className="mt-3 space-y-1 text-sm text-gray-600">
                 <p>
                   <span className="font-medium">Packing Staff:</span>{" "}
@@ -71,6 +81,21 @@ const VerificationModalComponent = ({
                   <span className="font-medium">Packed At:</span>{" "}
                   {formatDateTime(orderDetails.packingDetails?.packedAt)}
                 </p>
+                {isCompleted && (
+                  <>
+                    <p>
+                      <span className="font-medium">Verified By:</span>{" "}
+                      {orderDetails.storageDetails?.verificationStaff
+                        ?.staffName || "N/A"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Completed At:</span>{" "}
+                      {formatDateTime(
+                        orderDetails.storageDetails?.verificationCompletedAt
+                      )}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
             <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
@@ -82,7 +107,9 @@ const VerificationModalComponent = ({
         <div className="p-6 space-y-6">
           {/* Items Table */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Items to Check:</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {isReadOnly ? "Verified Items:" : "Items to Check:"}
+            </h3>
             <div className="overflow-x-auto border border-gray-200 rounded-lg">
               <table className="min-w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -96,12 +123,21 @@ const VerificationModalComponent = ({
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-24">
                       Qty
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-40">
-                      Action
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-32">
-                      Report
-                    </th>
+                    {!isReadOnly && (
+                      <>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-40">
+                          Action
+                        </th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-32">
+                          Report
+                        </th>
+                      </>
+                    )}
+                    {isReadOnly && (
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 w-40">
+                        Verification Status
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -136,43 +172,76 @@ const VerificationModalComponent = ({
                       <td className="py-3 px-4 text-sm text-gray-900">
                         {item.quantity} {item.weight || ""}
                       </td>
-                      <td className="py-3 px-4">
-                        {item.storageVerified ? (
-                          <span className="inline-flex items-center px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Verified
-                          </span>
-                        ) : item.storageComplaints &&
-                          item.storageComplaints.length > 0 ? (
-                          <span className="inline-flex items-center px-3 py-1 text-xs bg-red-100 text-red-800 rounded-full">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Has Issue
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => onVerifyItem(index)}
-                            className="px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
-                          >
-                            Verify Now
-                          </button>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => {
-                            setComplaintData({
-                              itemIndex: index,
-                              complaintType: "",
-                              complaintDetails: "",
-                            });
-                            setShowComplaintModal(true);
-                          }}
-                          className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                        >
-                          <AlertTriangle className="h-3 w-3 inline mr-1" />
-                          Report
-                        </button>
-                      </td>
+                      {!isReadOnly && (
+                        <>
+                          <td className="py-3 px-4">
+                            {item.storageVerified ? (
+                              <span className="inline-flex items-center px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Verified
+                              </span>
+                            ) : item.storageComplaints &&
+                              item.storageComplaints.length > 0 ? (
+                              <span className="inline-flex items-center px-3 py-1 text-xs bg-red-100 text-red-800 rounded-full">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                Has Issue
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => onVerifyItem(index)}
+                                className="px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
+                              >
+                                Verify Now
+                              </button>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={() => {
+                                setComplaintData({
+                                  itemIndex: index,
+                                  complaintType: "",
+                                  complaintDetails: "",
+                                });
+                                setShowComplaintModal(true);
+                              }}
+                              className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                            >
+                              <AlertTriangle className="h-3 w-3 inline mr-1" />
+                              Report
+                            </button>
+                          </td>
+                        </>
+                      )}
+                      {isReadOnly && (
+                        <td className="py-3 px-4">
+                          {item.storageVerified ? (
+                            <div className="text-xs text-gray-600">
+                              <p className="font-medium text-green-700">
+                                Verified
+                              </p>
+                              <p>By: {item.verifiedBy?.staffName || "N/A"}</p>
+                              <p>{formatDateTime(item.verifiedAt)}</p>
+                            </div>
+                          ) : item.storageComplaints &&
+                            item.storageComplaints.length > 0 ? (
+                            <div className="text-xs text-gray-600">
+                              <p className="font-medium text-red-700">
+                                Complaint Reported
+                              </p>
+                              <p>
+                                By:{" "}
+                                {item.storageComplaints[0].reportedBy
+                                  ?.staffName || "N/A"}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-500">
+                              Not Verified
+                            </span>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -186,11 +255,21 @@ const VerificationModalComponent = ({
               Storage Notes
             </label>
             <textarea
-              value={storageNotes}
-              onChange={(e) => setStorageNotes(e.target.value)}
+              value={
+                isReadOnly
+                  ? orderDetails.storageDetails?.storageNotes || "No notes"
+                  : storageNotes
+              }
+              onChange={(e) => !isReadOnly && setStorageNotes(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
               rows="3"
-              placeholder="Add any notes about item conditions, storage requirements, etc."
+              placeholder={
+                isReadOnly
+                  ? ""
+                  : "Add any notes about item conditions, storage requirements, etc."
+              }
+              readOnly={isReadOnly}
+              disabled={isReadOnly}
             />
           </div>
 
@@ -201,10 +280,21 @@ const VerificationModalComponent = ({
             </label>
             <input
               type="text"
-              value={storageLocation}
-              onChange={(e) => setStorageLocation(e.target.value)}
+              value={
+                isReadOnly
+                  ? orderDetails.storageDetails?.storageLocation ||
+                    "Not specified"
+                  : storageLocation
+              }
+              onChange={(e) =>
+                !isReadOnly && setStorageLocation(e.target.value)
+              }
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
-              placeholder="e.g., Shelf A-12, Cold Storage Room 2, etc."
+              placeholder={
+                isReadOnly ? "" : "e.g., Shelf A-12, Cold Storage Room 2, etc."
+              }
+              readOnly={isReadOnly}
+              disabled={isReadOnly}
             />
           </div>
 
@@ -222,7 +312,9 @@ const VerificationModalComponent = ({
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5">
               <div
-                className="bg-green-600 h-2.5 rounded-full transition-all duration-300"
+                className={`h-2.5 rounded-full transition-all duration-300 ${
+                  isCompleted ? "bg-green-600" : "bg-blue-600"
+                }`}
                 style={{
                   width: `${
                     (orderDetails.items.filter((item) => item.storageVerified)
@@ -253,7 +345,7 @@ const VerificationModalComponent = ({
               Close
             </button>
 
-            {allItemsVerified && (
+            {!isReadOnly && allItemsVerified && (
               <button
                 onClick={onCompleteVerification}
                 className="flex items-center px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
@@ -261,6 +353,13 @@ const VerificationModalComponent = ({
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Complete & Hand Over
               </button>
+            )}
+
+            {isReadOnly && (
+              <div className="flex items-center text-sm text-green-600 bg-green-50 px-4 py-2 rounded-lg">
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Order Already Handed Over to Dispatch
+              </div>
             )}
           </div>
         </div>
@@ -415,6 +514,7 @@ const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
 
   const fetchStorageQueue = useCallback(async () => {
     try {
+      // Fetch ALL orders regardless of status (like Order Overview)
       const response = await fetch(`${API_BASE_URL}/api/storage/queue`);
       const data = await response.json();
 
@@ -463,8 +563,20 @@ const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
   }, []);
 
   const startVerification = useCallback(
-    async (orderId) => {
+    async (orderId, orderStatus) => {
       try {
+        // ✅ For already verified/handed over orders, just view details
+        if (
+          orderStatus === "handed_to_dispatch" ||
+          orderStatus === "verified"
+        ) {
+          setSelectedOrder(orderId);
+          setShowVerificationModal(true);
+          await fetchOrderDetails(orderId);
+          return;
+        }
+
+        // ✅ For pending/verifying orders, start/continue verification
         const response = await fetch(
           `${API_BASE_URL}/api/storage/start/${orderId}`,
           {
@@ -610,6 +722,41 @@ const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
     fetchStats,
   ]);
 
+  const getOrderStatusColor = (orderStatus) => {
+    switch (orderStatus) {
+      case "picking-order":
+        return "bg-yellow-100 text-yellow-800";
+      case "allocated-driver":
+        return "bg-blue-100 text-blue-800";
+      case "assigned-dispatch-officer-2":
+        return "bg-purple-100 text-purple-800";
+      case "ready-to-pickup":
+        return "bg-indigo-100 text-indigo-800";
+      case "order-not-pickedup":
+        return "bg-orange-100 text-orange-800";
+      case "order-picked-up":
+        return "bg-cyan-100 text-cyan-800";
+      case "on-way":
+        return "bg-blue-100 text-blue-800";
+      case "driver-confirmed":
+        return "bg-teal-100 text-teal-800";
+      case "order-processed":
+        return "bg-green-100 text-green-800";
+      case "order-complete":
+        return "bg-emerald-100 text-emerald-800";
+      case "refund":
+        return "bg-red-100 text-red-800";
+      case "complain-order":
+        return "bg-red-100 text-red-800";
+      case "issue-driver":
+        return "bg-orange-100 text-orange-800";
+      case "parcel-returned":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case "high":
@@ -626,11 +773,29 @@ const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case "verified":
-        return "bg-gray-800 text-white";
+      case "handed_to_dispatch":
+        return "bg-green-100 text-green-800";
+      case "verifying":
+        return "bg-blue-100 text-blue-800";
       case "pending":
         return "bg-orange-100 text-orange-800";
       default:
         return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case "handed_to_dispatch":
+        return "Handed Over";
+      case "verified":
+        return "Verified";
+      case "verifying":
+        return "Verifying";
+      case "pending":
+        return "Pending";
+      default:
+        return status;
     }
   };
 
@@ -643,65 +808,13 @@ const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
     });
   };
 
+  const canStartVerification = (order) => {
+    return order.status === "pending" || order.status === "verifying";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-            Delivery Management System
-          </h1>
-          <p className="text-gray-600">
-            Complete workflow management from packing to delivery confirmation
-          </p>
-        </div>
-
-        <div className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">
-            Select Role
-          </h2>
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-3">
-              {roleButtons.map((role, index) => {
-                const IconComponent = role.icon;
-                return (
-                  <button
-                    key={index}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      role.name === selectedRole
-                        ? "bg-gray-800 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                    onClick={() => setSelectedRole(role.name)}
-                  >
-                    <IconComponent className="h-4 w-4" />
-                    <span>{role.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              {secondRowRoles.map((role, index) => {
-                const IconComponent = role.icon;
-                return (
-                  <button
-                    key={index}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      role.name === selectedRole
-                        ? "bg-gray-800 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                    onClick={() => setSelectedRole(role.name)}
-                  >
-                    <IconComponent className="h-4 w-4" />
-                    <span>{role.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
         <div>
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -709,7 +822,8 @@ const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
                 Delivery Storage Officer Dashboard
               </h2>
               <p className="text-gray-600">
-                Verify packed orders and prepare for dispatch
+                Verify packed orders and prepare for dispatch - All orders
+                tracked
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -728,8 +842,8 @@ const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
             <div className="flex items-center">
               <CheckCircle2 className="h-5 w-5 text-blue-600 mr-2" />
               <span className="text-sm text-blue-800">
-                Verify all items match the packing list and check for any
-                damages before sending to dispatch.
+                All orders remain visible for complete tracking. Verify items
+                match the packing list and check for damages before dispatch.
               </span>
             </div>
           </div>
@@ -737,7 +851,7 @@ const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">
-                Storage Operations
+                Storage Operations - Complete History
               </h3>
             </div>
 
@@ -748,13 +862,14 @@ const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-7 gap-4 px-6 py-3 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                <div className="grid grid-cols-8 gap-4 px-6 py-3 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                   <div>Order</div>
                   <div>Priority</div>
                   <div>Packed By</div>
                   <div>Received At</div>
                   <div>Delivery Time</div>
-                  <div>Status</div>
+                  <div>Order Status</div>
+                  <div>Storage Status</div>
                   <div>Actions</div>
                 </div>
 
@@ -763,7 +878,11 @@ const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
                     storageQueue.map((order, index) => (
                       <div
                         key={`order-${index}`}
-                        className="grid grid-cols-7 gap-4 px-6 py-4 hover:bg-gray-50"
+                        className={`grid grid-cols-8 gap-4 px-6 py-4 hover:bg-gray-50 ${
+                          order.status === "handed_to_dispatch"
+                            ? "bg-green-50"
+                            : ""
+                        }`}
                       >
                         <div>
                           <div className="font-medium text-gray-900">
@@ -793,11 +912,20 @@ const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
                         </div>
                         <div>
                           <span
+                            className={`inline-block px-2 py-1 text-xs font-medium rounded ${getOrderStatusColor(
+                              order.orderStatus
+                            )}`}
+                          >
+                            {order.orderStatus}
+                          </span>
+                        </div>
+                        <div>
+                          <span
                             className={`inline-block px-2 py-1 text-xs font-medium rounded ${getStatusColor(
                               order.status
                             )}`}
                           >
-                            {order.status}
+                            {getStatusLabel(order.status)}
                           </span>
                           {order.verifiedItems > 0 && (
                             <div className="text-xs text-gray-500 mt-1">
@@ -806,26 +934,47 @@ const DeliveryStorageOfficerDashboard = ({ selectedRole, setSelectedRole }) => {
                           )}
                         </div>
                         <div>
-                          {order.status === "verified" ? (
-                            <button className="flex items-center px-3 py-1 text-xs bg-gray-800 text-white rounded">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Verified
-                            </button>
-                          ) : (
+                          {order.status === "handed_to_dispatch" ? (
                             <button
-                              onClick={() => startVerification(order.orderId)}
+                              onClick={() =>
+                                startVerification(order.orderId, order.status)
+                              }
+                              className="flex items-center px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              View
+                            </button>
+                          ) : order.status === "verified" ? (
+                            <button
+                              onClick={() =>
+                                startVerification(order.orderId, order.status)
+                              }
+                              className="flex items-center px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-700"
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Complete
+                            </button>
+                          ) : canStartVerification(order) ? (
+                            <button
+                              onClick={() =>
+                                startVerification(order.orderId, order.status)
+                              }
                               className="flex items-center px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-700"
                             >
                               <Eye className="h-3 w-3 mr-1" />
-                              Start
+                              {order.status === "verifying"
+                                ? "Continue"
+                                : "Start"}
                             </button>
+                          ) : (
+                            <span className="text-xs text-gray-500">-</span>
                           )}
                         </div>
                       </div>
                     ))
                   ) : (
                     <div className="p-8 text-center text-gray-500">
-                      No orders to verify
+                      No orders to display
                     </div>
                   )}
                 </div>

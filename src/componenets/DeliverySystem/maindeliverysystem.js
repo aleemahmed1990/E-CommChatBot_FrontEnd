@@ -8,6 +8,7 @@ import {
   Phone,
   FileText,
   Navigation,
+  CheckCircle,
 } from "lucide-react";
 
 // Import dashboard components
@@ -19,6 +20,7 @@ import DispatchOfficer2Dashboard from "./DispatchOfficer2";
 import DriverDashboard from "./DriverDashboard";
 import DriverOnDeliveryDashboard from "./Driverondelivery";
 import ComplaintManagement from "./ComplainManagement";
+import DeliveredOrdersDashboard from "./DeliveredOrdersDashboard";
 
 const DeliveryManagementSystem = () => {
   const [selectedRole, setSelectedRole] = useState("Order Overview");
@@ -66,17 +68,23 @@ const DeliveryManagementSystem = () => {
       active: false,
       color: "bg-gray-100 text-gray-700",
     },
+    {
+      name: "Delivered Orders",
+      icon: CheckCircle,
+      active: false,
+      color: "bg-gray-100 text-gray-700",
+    },
   ];
 
   const secondRowRoles = [
     {
-      name: "Complaint Manager on Delivery",
+      name: "Complaint Manager on delivery (within 24 hours)",
       icon: Phone,
       active: false,
       color: "bg-gray-100 text-gray-700",
     },
     {
-      name: "Complaint Manager After Delivery",
+      name: "Complaint Manager after delivery (after 24 hours)",
       icon: FileText,
       active: false,
       color: "bg-gray-100 text-gray-700",
@@ -134,14 +142,21 @@ const DeliveryManagementSystem = () => {
             setSelectedRole={setSelectedRole}
           />
         );
-      case "Complaint Manager on Delivery":
+      case "Delivered Orders":
+        return (
+          <DeliveredOrdersDashboard
+            selectedRole={selectedRole}
+            setSelectedRole={setSelectedRole}
+          />
+        );
+      case "Complaint Manager on delivery (within 24 hours)":
         return (
           <ComplaintManagement
             selectedRole={selectedRole}
             setSelectedRole={setSelectedRole}
           />
         );
-      case "Complaint Manager after Delivery":
+      case "Complaint Manager after delivery (after 24 hours)":
         return (
           <ComplaintManagement
             selectedRole={selectedRole}
@@ -164,7 +179,7 @@ const DeliveryManagementSystem = () => {
         {/* Title */}
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-            Delivery Management System
+            📦 Delivery Management System
           </h1>
           <p className="text-gray-600">
             Complete workflow management from packing to delivery confirmation

@@ -970,64 +970,6 @@ Check console for full details.`);
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="p-6">
-        {/* Title */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-            Delivery Management System
-          </h1>
-          <p className="text-gray-600">
-            Complete workflow management from packing to delivery confirmation
-          </p>
-        </div>
-
-        {/* Role Selection */}
-        <div className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">
-            Select Role
-          </h2>
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-3">
-              {roleButtons.map((role, index) => {
-                const IconComponent = role.icon;
-                return (
-                  <button
-                    key={index}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      role.name === selectedRole
-                        ? "bg-gray-800 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                    onClick={() => setSelectedRole(role.name)}
-                  >
-                    <IconComponent className="h-4 w-4" />
-                    <span>{role.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              {secondRowRoles.map((role, index) => {
-                const IconComponent = role.icon;
-                return (
-                  <button
-                    key={index}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      role.name === selectedRole
-                        ? "bg-gray-800 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                    onClick={() => setSelectedRole(role.name)}
-                  >
-                    <IconComponent className="h-4 w-4" />
-                    <span>{role.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
         {/* Dashboard Content */}
         <div>
           <div className="flex justify-between items-center mb-6">

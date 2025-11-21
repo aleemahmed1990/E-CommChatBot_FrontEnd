@@ -2,6 +2,19 @@ import React, { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, Save, X, Home } from "lucide-react";
 import Sidebar from "../Sidebar/sidebar";
 
+const BALI_STATES = [
+  "BULELENG",
+  "JEMBRANA",
+  "TABANAN",
+  "BADUNG",
+  "DENPASAR",
+  "GIANYAR",
+  "BANGLI",
+  "KARANGASEM",
+  "KLUNGKUNG",
+  "NUSA PENIDA",
+];
+
 const AreasManagement = () => {
   const [areas, setAreas] = useState([]);
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -213,15 +226,20 @@ const AreasManagement = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     State *
                   </label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Punjab"
+                  <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                     value={newArea.state}
                     onChange={(e) =>
                       setNewArea({ ...newArea, state: e.target.value })
                     }
-                  />
+                  >
+                    <option value="">Select a state</option>
+                    {BALI_STATES.map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -382,15 +400,20 @@ const AreaCard = ({
     return (
       <div className="border border-gray-200 rounded-lg p-4 bg-blue-50">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <input
-            type="text"
+          <select
             value={editData.state}
             onChange={(e) =>
               setEditData({ ...editData, state: e.target.value })
             }
-            placeholder="State"
             className="px-3 py-2 border border-gray-300 rounded-lg"
-          />
+          >
+            <option value="">Select a state</option>
+            {BALI_STATES.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             value={editData.area}

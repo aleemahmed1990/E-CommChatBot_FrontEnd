@@ -42,66 +42,6 @@ const OrderOverviewDashboard = ({ selectedRole, setSelectedRole }) => {
   const lastOrdersRef = useRef("");
   const lastStatusRef = useRef("");
 
-  const roleButtons = [
-    {
-      name: "Order Overview",
-      icon: Package,
-      active: true,
-      color: "bg-gray-800 text-white",
-    },
-    {
-      name: "Packing Staff",
-      icon: Package,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Delivery Storage Officer",
-      icon: Building,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Dispatch Officer 1",
-      icon: User,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Dispatch Officer 2",
-      icon: User,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Driver",
-      icon: Truck,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Driver on Delivery",
-      icon: Navigation,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-  ];
-
-  const secondRowRoles = [
-    {
-      name: "Complaint Manager on Delivery",
-      icon: Phone,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-    {
-      name: "Complaint Manager After Delivery",
-      icon: FileText,
-      active: false,
-      color: "bg-gray-100 text-gray-700",
-    },
-  ];
-
   const enrichOrderWithCustomerData = (order) => {
     return {
       ...order,
@@ -604,60 +544,9 @@ const OrderOverviewDashboard = ({ selectedRole, setSelectedRole }) => {
       <div className="p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            📦 Delivery Management System
-          </h1>
           <p className="text-gray-600">
             Complete workflow from order confirmation to delivery
           </p>
-        </div>
-
-        {/* Role Selection */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">
-            Select Role
-          </h2>
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-2">
-              {roleButtons.map((role, index) => {
-                const IconComponent = role.icon;
-                return (
-                  <button
-                    key={index}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      role.name === selectedRole
-                        ? "bg-gray-900 text-white shadow-lg"
-                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-                    }`}
-                    onClick={() => setSelectedRole(role.name)}
-                  >
-                    <IconComponent className="h-4 w-4" />
-                    <span>{role.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {secondRowRoles.map((role, index) => {
-                const IconComponent = role.icon;
-                return (
-                  <button
-                    key={index}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      role.name === selectedRole
-                        ? "bg-gray-900 text-white shadow-lg"
-                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-                    }`}
-                    onClick={() => setSelectedRole(role.name)}
-                  >
-                    <IconComponent className="h-4 w-4" />
-                    <span>{role.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
 
         {/* Live Workflow Status */}
