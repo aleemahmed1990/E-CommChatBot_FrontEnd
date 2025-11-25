@@ -50,6 +50,66 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
   });
   const [submittingComplaint, setSubmittingComplaint] = useState(false);
 
+  const roleButtons = [
+    {
+      name: "Order Overview",
+      icon: Package,
+      active: false,
+      color: "bg-gray-100 text-gray-700",
+    },
+    {
+      name: "Packing Staff",
+      icon: Package,
+      active: false,
+      color: "bg-gray-100 text-gray-700",
+    },
+    {
+      name: "Delivery Storage Officer",
+      icon: Building,
+      active: false,
+      color: "bg-gray-100 text-gray-700",
+    },
+    {
+      name: "Dispatch Officer 1",
+      icon: User,
+      active: false,
+      color: "bg-gray-100 text-gray-700",
+    },
+    {
+      name: "Dispatch Officer 2",
+      icon: User,
+      active: false,
+      color: "bg-gray-100 text-gray-700",
+    },
+    {
+      name: "Driver",
+      icon: Truck,
+      active: true,
+      color: "bg-gray-800 text-white",
+    },
+    {
+      name: "Driver on Delivery",
+      icon: Navigation,
+      active: false,
+      color: "bg-gray-100 text-gray-700",
+    },
+  ];
+
+  const secondRowRoles = [
+    {
+      name: "Complaint Manager on Delivery",
+      icon: Phone,
+      active: false,
+      color: "bg-gray-100 text-gray-700",
+    },
+    {
+      name: "Complaint Manager After Delivery",
+      icon: FileText,
+      active: false,
+      color: "bg-gray-100 text-gray-700",
+    },
+  ];
+
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
@@ -126,6 +186,38 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
     }
   };
 
+  const debugDriverOrders = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/driver/debug-tracking`);
+      const debugData = await response.json();
+
+      console.log("🔍 DRIVER TRACKING DEBUG DATA:", debugData);
+
+      alert(`DRIVER TRACKING DEBUG INFO:
+    
+Total Tracking Records: ${debugData.totalTracking}
+Order Picked Up: ${debugData.orderPickedUpCount}
+On Way: ${debugData.onWayCount}
+Order Complete: ${debugData.orderCompleteCount}
+
+Orders with 'order-picked-up' status:
+${debugData.orders
+  .filter((o) => o.trackingStatus === "order-picked-up")
+  .map(
+    (order) =>
+      `${order.orderId}: Tracking=${order.trackingStatus}, Order=${
+        order.orderStatus
+      } (Vehicle: ${order.vehicleName || "None"})`
+  )
+  .join("\n")}
+
+Check console for full details.`);
+    } catch (error) {
+      console.error("Error fetching debug info:", error);
+      alert("Debug failed - check console");
+    }
+  };
+
   const handleStartRoute = async () => {
     if (!selectedVehicle) {
       alert("Please select a vehicle first");
@@ -160,7 +252,7 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
       if (response.ok) {
         const result = await response.json();
         alert(result.message);
-        // Refresh and reset
+        // Refresh data to show updated status
         fetchData();
         setSelectedVehicle(null);
         setVehicleOrders([]);
@@ -185,6 +277,7 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
     }
   };
 
+  // Complaint handling functions
   const handleReportComplaint = (order) => {
     setComplaintOrder(order);
     setComplaintData({
@@ -231,6 +324,7 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
 
     files.forEach((file) => {
       if (file.size > 50 * 1024 * 1024) {
+        // 50MB limit
         alert(`File ${file.name} is too large. Maximum size is 50MB.`);
         return;
       }
@@ -244,7 +338,7 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
           filename: file.name,
           mimetype: file.type,
           fileSize: file.size,
-          base64Data: e.target.result.split(",")[1],
+          base64Data: e.target.result.split(",")[1], // Remove data:image/jpeg;base64, prefix
           uploadedAt: new Date().toISOString(),
         };
 
@@ -312,6 +406,7 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
           `Complaint submitted successfully! Complaint ID: ${result.complaintId}`
         );
         setShowComplaintModal(false);
+        // Refresh orders to show complaint status
         fetchVehicleOrders(selectedVehicle.vehicleId);
       } else {
         const error = await response.json();
@@ -447,6 +542,31 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
           </div>
 
           <div className="p-6 space-y-6">
+            {/* Complaint Instructions */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+              <h3 className="text-sm font-medium text-yellow-800 mb-2">
+                Complaint Reporting Instructions
+              </h3>
+              <ol className="list-decimal list-inside text-sm text-yellow-700 space-y-1">
+                <li>Verify the problem with the customer on the line before</li>
+                <li>
+                  Enter the order number and select all applicable problems
+                </li>
+                <li>
+                  Indicate what the customer wants to do (cancel, replace,
+                  refund)
+                </li>
+                <li>Check if the customer is returning items with you</li>
+                <li>
+                  Describe the specific solution the customer is requesting
+                </li>
+                <li>
+                  Submit the form - the complaint manager will contact you
+                  shortly
+                </li>
+              </ol>
+            </div>
+
             {/* Order Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
               <div>
@@ -474,7 +594,8 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
             {/* Problem Selection */}
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-3">
-                What is the problem? <span className="text-red-500">*</span>
+                What is the problem? <span className="text-red-500">*</span>{" "}
+                (Select all that apply)
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {problemOptions.map((option) => (
@@ -501,7 +622,7 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
             {/* Photo/Video Upload */}
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-3">
-                Upload Photo/Video (Optional)
+                Upload Photo/Video of Damaged Item (Optional)
               </h3>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                 <div className="text-center">
@@ -516,6 +637,9 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
                       className="hidden"
                     />
                   </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Upload images or videos (Max 50MB per file)
+                  </p>
                 </div>
 
                 {complaintData.mediaAttachments.length > 0 && (
@@ -545,6 +669,90 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
               </div>
             </div>
 
+            {/* Customer Wants */}
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3">
+                What does the customer want to do? (Select all that apply)
+              </h3>
+              <div className="space-y-2">
+                {customerWantsOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex items-center space-x-2"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={complaintData.customerWantsToDo.includes(
+                        option.value
+                      )}
+                      onChange={() =>
+                        handleComplaintChange("customerWantsToDo", option.value)
+                      }
+                      className="rounded border-gray-300"
+                    />
+                    <span className="text-sm">{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Item Return */}
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3">
+                Item Return
+              </h3>
+              <div className="space-y-2">
+                {itemReturnOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex items-center space-x-2"
+                  >
+                    <input
+                      type="radio"
+                      name="itemReturn"
+                      value={option.value}
+                      checked={complaintData.itemReturn === option.value}
+                      onChange={(e) =>
+                        handleComplaintChange("itemReturn", e.target.value)
+                      }
+                      className="border-gray-300"
+                    />
+                    <span className="text-sm">{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Solution Customer is Asking For */}
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3">
+                Solution Customer is Asking For (Select all that apply)
+              </h3>
+              <div className="space-y-2">
+                {solutionOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex items-center space-x-2"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={complaintData.solutionCustomerAskingFor.includes(
+                        option.value
+                      )}
+                      onChange={() =>
+                        handleComplaintChange(
+                          "solutionCustomerAskingFor",
+                          option.value
+                        )
+                      }
+                      className="rounded border-gray-300"
+                    />
+                    <span className="text-sm">{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             {/* Additional Notes */}
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-3">
@@ -555,10 +763,13 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
                 onChange={(e) =>
                   handleComplaintChange("additionalNotes", e.target.value)
                 }
-                placeholder="Any additional information..."
+                placeholder="Any additional information about the complaint..."
                 className="w-full border border-gray-300 rounded-md p-2 h-24"
                 maxLength={1000}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                {complaintData.additionalNotes.length}/1000 characters
+              </p>
             </div>
           </div>
 
@@ -575,9 +786,16 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
               disabled={
                 submittingComplaint || complaintData.problemTypes.length === 0
               }
-              className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
             >
-              {submittingComplaint ? "Submitting..." : "Submit Complaint"}
+              {submittingComplaint ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Submitting...
+                </>
+              ) : (
+                "Submit Complaint"
+              )}
             </button>
           </div>
         </div>
@@ -594,7 +812,7 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold text-gray-900">
-                Order Details - {order.orderId}
+                Order Verification - {order.orderId}
               </h2>
               <button
                 onClick={onClose}
@@ -622,6 +840,10 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
                     <span className="font-medium">Delivery Date:</span>{" "}
                     {new Date(order.deliveryDate).toLocaleDateString()}
                   </p>
+                  <p>
+                    <span className="font-medium">Time Slot:</span>{" "}
+                    {order.timeSlot || "Not specified"}
+                  </p>
                 </div>
               </div>
 
@@ -641,9 +863,19 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
               </div>
             </div>
 
+            {order.specialInstructions && (
+              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6">
+                <h3 className="text-lg font-semibold mb-2 flex items-center">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
+                  Special Instructions
+                </h3>
+                <p className="text-yellow-800">{order.specialInstructions}</p>
+              </div>
+            )}
+
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-3">
-                Items ({order.totalItems})
+                Items in this order ({order.totalItems} items)
               </h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full bg-white border border-gray-200">
@@ -655,6 +887,9 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                         Quantity
                       </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Weight
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -662,6 +897,7 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
                       <tr key={index}>
                         <td className="px-4 py-2">{item.productName}</td>
                         <td className="px-4 py-2">{item.quantity}</td>
+                        <td className="px-4 py-2">{item.weight || "N/A"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -702,6 +938,9 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Loading Driver Dashboard
           </h2>
+          <p className="text-gray-600">
+            Fetching available vehicles and orders...
+          </p>
         </div>
       </div>
     );
@@ -710,15 +949,37 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="p-6">
+        {/* Dashboard Content */}
         <div>
           <div className="flex justify-between items-center mb-6">
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
                 Driver Dashboard
               </h2>
+              <button
+                onClick={debugDriverOrders}
+                className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 mt-2"
+                title="Debug driver orders from DeliveryTracking"
+              >
+                🔍 Debug Tracking
+              </button>
               <p className="text-gray-600">
-                Verify orders and start delivery route
+                Final verification and delivery route management
               </p>
+            </div>
+            <div className="flex items-center text-sm text-gray-600">
+              <CheckCircle className="h-4 w-4 mr-1" />
+              {stats.readyForPickup} orders to verify
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-blue-600 mr-2" />
+              <span className="text-sm text-blue-800">
+                Verify all orders before starting your delivery route. Check
+                items carefully for any damages.
+              </span>
             </div>
           </div>
 
@@ -740,7 +1001,13 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
-                      <Truck className="h-5 w-5 mr-2 text-gray-600" />
+                      <Truck
+                        className={`h-5 w-5 mr-2 ${
+                          selectedVehicle?.vehicleId === vehicle.vehicleId
+                            ? "text-gray-800"
+                            : "text-gray-600"
+                        }`}
+                      />
                       <span className="font-medium text-gray-900">
                         {vehicle.displayName}
                       </span>
@@ -749,8 +1016,21 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
                       {vehicle.status}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    Orders: {vehicle.assignedOrders.length}
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <div>Type: {vehicle.type}</div>
+                    <div>Orders: {vehicle.assignedOrders.length}</div>
+                    <div>
+                      Load: {vehicle.totalItems}/{vehicle.maxCapacity}
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div
+                        className="bg-gray-800 h-2 rounded-full"
+                        style={{ width: `${vehicle.loadProgress}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {vehicle.loadProgress}%
+                    </div>
                   </div>
                 </div>
               ))}
@@ -761,22 +1041,35 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
           {selectedVehicle && (
             <div className="mb-8">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Orders - {selectedVehicle.displayName}
+                Dispatch Queue - Final Check ({selectedVehicle.displayName})
               </h3>
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="grid grid-cols-7 gap-4 px-6 py-3 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                  <div>Order</div>
+                  <div>Customer</div>
+                  <div>Delivery Time</div>
+                  <div>Route</div>
+                  <div>Items</div>
+                  <div>Status</div>
+                  <div>Actions</div>
+                </div>
+
                 {vehicleOrders.length === 0 ? (
                   <div className="p-8 text-center">
                     <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       No Orders Assigned
                     </h3>
+                    <p className="text-gray-600">
+                      This vehicle has no orders ready for delivery.
+                    </p>
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-200">
                     {vehicleOrders.map((order, index) => (
                       <div
                         key={index}
-                        className="grid grid-cols-5 gap-4 px-6 py-4 hover:bg-gray-50"
+                        className="grid grid-cols-7 gap-4 px-6 py-4 hover:bg-gray-50"
                       >
                         <div>
                           <div className="font-medium text-gray-900">
@@ -790,8 +1083,25 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
                           <div className="font-medium text-gray-900">
                             {order.customerName}
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className="flex items-center text-sm text-gray-600 mt-1">
+                            <Phone className="h-3 w-3 mr-1" />
                             {order.customerPhone}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-900">
+                            {new Date(order.deliveryDate).toLocaleDateString()}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {order.timeSlot}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-900">
+                            Route-
+                            {order.deliveryAddress?.area?.substring(0, 2) ||
+                              "XX"}
+                            {index + 1}
                           </div>
                         </div>
                         <div>
@@ -801,12 +1111,12 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
                         </div>
                         <div>
                           {verifiedOrders.has(order.orderId) ? (
-                            <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-green-600 text-white">
-                              ✓ verified
+                            <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-gray-800 text-white">
+                              verified
                             </span>
                           ) : (
-                            <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-yellow-100 text-yellow-800">
-                              pending
+                            <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-800">
+                              order-picked-up
                             </span>
                           )}
                         </div>
@@ -816,18 +1126,24 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
                             className="flex items-center px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-700"
                           >
                             <Eye className="h-3 w-3 mr-1" />
-                            View
+                            View Details
                           </button>
-                          {!verifiedOrders.has(order.orderId) && (
-                            <button
-                              onClick={() =>
-                                handleVerifyOrder(order.orderId, true)
-                              }
-                              className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-                            >
-                              Verify
-                            </button>
-                          )}
+                          <button
+                            onClick={() =>
+                              window.open(`tel:${order.customerPhone}`, "_self")
+                            }
+                            className="flex items-center px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                          >
+                            <Phone className="h-3 w-3 mr-1" />
+                            Call
+                          </button>
+                          <button
+                            onClick={() => handleReportComplaint(order)}
+                            className="flex items-center px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                          >
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Report Issue
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -837,22 +1153,35 @@ const DriverDashboard = ({ selectedRole, setSelectedRole }) => {
             </div>
           )}
 
-          {/* Start Route Button */}
+          {/* Ready for Delivery */}
           {selectedVehicle && vehicleOrders.length > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-yellow-800">
-                    Ready for Delivery
-                  </div>
-                  <div className="text-sm text-yellow-700">
-                    {verifiedOrders.size}/{vehicleOrders.length} orders verified
+                <div className="flex items-center">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
+                  <div>
+                    <div className="font-medium text-yellow-800">
+                      Ready for Delivery
+                    </div>
+                    <div className="text-sm text-yellow-700">
+                      {verifiedOrders.size}/{vehicleOrders.length} orders
+                      verified
+                    </div>
+                    <div className="text-sm text-yellow-700">
+                      Vehicle: {selectedVehicle.displayName} (
+                      {selectedVehicle.type})
+                    </div>
+                    {verifiedOrders.size < vehicleOrders.length && (
+                      <div className="text-sm text-yellow-700 mt-1">
+                        Please verify all orders before starting delivery route
+                      </div>
+                    )}
                   </div>
                 </div>
                 <button
                   onClick={handleStartRoute}
                   disabled={verifiedOrders.size < vehicleOrders.length}
-                  className={`flex items-center px-4 py-2 rounded ${
+                  className={`flex items-center px-4 py-2 rounded transition-colors ${
                     verifiedOrders.size === vehicleOrders.length
                       ? "bg-gray-800 text-white hover:bg-gray-700"
                       : "bg-gray-400 text-gray-200 cursor-not-allowed"
